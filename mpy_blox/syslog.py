@@ -1,6 +1,6 @@
 import usocket
 
-from logging import Handler
+from logging import Handler, getLogger
 
 LOG_USER = 1
 
@@ -31,6 +31,14 @@ class SyslogHandler(Handler):
 
     def emit(self, record):
         self.sock.sendto(self.format_syslog(record), self.sock_addr)
+
+
+def init_syslog(config):
+    try:
+        syslog_host = config['logging.syslog.hostname']
+        getLogger().addHandler(SyslogHandler(syslog_host))
+    except KeyError:
+        pass
 
 
 def main():
