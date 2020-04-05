@@ -6,24 +6,25 @@ from utime import sleep
 
 
 class SocketUART:
-    def __init__(self, uart, status_pin_id=None, port=3767):
+    def __init__(self, uart, status_pin_id=None, port=3767, baud=115200):
         self.uart = uart
         self.status_pin_id = status_pin_id
         self.port = port
-    
+        self.baud = baud
+
     def start(self):
-        self.uart.init(115200)
-    
+        self.uart.init(self.baud)
+
     def stop(self):
         self.uart.deinit()
-    
+
     def serve_forever(self):
         server_socket = usocket.socket()
 
         addr = usocket.getaddrinfo('0.0.0.0', self.port)[0][-1]
         server_socket.bind(addr)
         server_socket.listen(1)
-        
+
         logging.info("Listening on %s", addr)
         while True:
             c_socket, addr = server_socket.accept()
@@ -45,7 +46,17 @@ class SocketUART:
         while True:
             if not uart.any():
                 continue
-            
+
             if status_led:
                 status_led.value(not status_led.value())
             c_socket.sendall(uart.readline())
+
+
+def main():
+    from machine import UART
+    uart_socket = SocketUART(UART(1, rx=4, tx=15), baud=9600)
+    uart_socket.serve_forever()
+
+
+if __name__ == '__main__':
+    main()
