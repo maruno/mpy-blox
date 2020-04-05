@@ -1,9 +1,7 @@
 import logging
 import ujson
-from machine import Pin, unique_id
+from machine import Pin
 from ubinascii import hexlify
-
-from umqtt.simple import MQTTClient
 
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
 
