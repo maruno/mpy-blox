@@ -10,35 +10,20 @@ class MQTTLight(MQTTDiscoverable):
     component_type = 'light'
 
     def __init__(self, name, pin_id, discovery_prefix = 'homeassistant'):
-        super().__init__(discovery_prefix)
-        self.name = name
+        super().__init__(name, discovery_prefix)
         self.pin = Pin(pin_id, Pin.OUT)
         self.mqtt_client.set_callback(self.msg_rcvd)
 
-    def publish_config(self):
-        logging.info('Sending %s discoverability config',
-                     self.__class__.__name__)
-        self.mqtt_client.publish(
-            '{}/config'.format(self.topic_prefix),
-            ujson.dumps({
-                '~': self.topic_prefix,
-                'name': self.name,
-                'unique_id': self.entity_id,
-                'cmd_t': '~/set',
-                'stat_t': '~/state',
-                'schema': 'json',
-                'brightness': False
-            })
-        )
-
-    def publish_state(self):
-        self.mqtt_client.publish(
-            '{}/state'.format(self.topic_prefix),
-            ujson.dumps({
-                'state': 'ON' if self.pin.value() else 'OFF'
-            })
-        )
+    @property
+    def app_disco_config(self):
+        return {'brightness': False}
     
+    @property
+    def app_state(self):
+        return {
+            'state': 'ON' if self.pin.value() else 'OFF'
+        }
+
     def msg_rcvd(self, topic, msg):
         msg = ujson.loads(msg)
         logging.info('Received message for %s: %s', topic.decode(), msg)
@@ -53,8 +38,7 @@ class MQTTLight(MQTTDiscoverable):
             self.mqtt_client.wait_msg()
     
     def connect(self):
-        self.mqtt_client.connect()
-        self.publish_config()
+        super().connect()
         self.publish_state()
         self.listen()
 
