@@ -4,19 +4,19 @@ from uos import uname
 from machine import Pin, unique_id
 from ubinascii import hexlify
 
-from umqtt.simple import MQTTClient
+from mqtt_as import MQTTClient
 
+from mpy_blox.config import config
 
 class MQTTDiscoverable:
     component_type = None
-    def __init__(self, name, discovery_prefix = 'homeassistant'):
+    def __init__(self, name, msg_cb=None, discovery_prefix = 'homeassistant'):
         self.name = name
         self.discovery_prefix = discovery_prefix
         self.mqtt_client = MQTTClient(
             client_id=self.entity_id,
-            server='172.16.3.1',
-            user='homeassistant',
-            password='hassamateurtje')
+            subs_cb=msg_cb,
+            **config['mqtt'])
 
     @property
     def entity_id(self):
@@ -42,13 +42,13 @@ class MQTTDiscoverable:
     def app_disco_config(self):
         raise NotImplementedError()
 
-    def publish_config(self):
+    async def publish_config(self):
         logging.info('Sending %s discoverability config',
                      self.__class__.__name__)
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
-        self.mqtt_client.publish(
+        await self.mqtt_client.publish(
             '{}/config'.format(self.topic_prefix),
             ujson.dumps(disco_config)
         )
@@ -57,12 +57,12 @@ class MQTTDiscoverable:
     def app_state(self):
         raise NotImplementedError()
 
-    def publish_state(self):
-        self.mqtt_client.publish(
+    async def publish_state(self):
+        await self.mqtt_client.publish(
             '{}/state'.format(self.topic_prefix),
             ujson.dumps(self.app_state)
         )
 
-    def connect(self):
-        self.mqtt_client.connect()
-        self.publish_config()
+    async def connect(self):
+        await self.mqtt_client.connect()
+        await self.publish_config()
