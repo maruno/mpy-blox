@@ -12,14 +12,19 @@ class MQTTSensor(MQTTDiscoverable):
         self.var_name = var_name
         self.dev_cls = device_class
         self.state = None
+        self.disco_task = None
 
     @property
     def app_disco_config(self):
-        return {
-           'device_class': self.dev_cls,
+        disco_cfg = {
            'unit_of_measurement': self.unit,
-           'value_template': "{{ value_json." + self.var_name + "}}"
+           'value_template': "{{ value_json." + self.var_name + " }}"
         }
+
+        if self.dev_cls:
+           disco_cfg['device_class'] = self.dev_cls
+        
+        return disco_cfg
 
     def set_variable(self, var_value):
         self.var_value = var_value

@@ -4,10 +4,10 @@ import ujson
 from machine import Pin
 from ubinascii import hexlify
 
-from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
+from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
 
 
-class MQTTLight(MQTTDiscoverable):
+class MQTTLight(MQTTMutableDiscoverable):
     component_type = 'light'
 
     def __init__(self, name, pin_id, discovery_prefix = 'homeassistant'):
@@ -18,7 +18,7 @@ class MQTTLight(MQTTDiscoverable):
 
     @property
     def app_disco_config(self):
-        return {'brightness': False}
+        return {'brightness': False, 'schema': 'json'}
     
     @property
     def app_state(self):
