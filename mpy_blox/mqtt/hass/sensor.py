@@ -6,8 +6,11 @@ class MQTTSensor(MQTTDiscoverable):
 
     def __init__(self, name, unit, var_name,
                  device_class=None,
+                 device_index=0,
                  discovery_prefix = 'homeassistant'):
-        super().__init__(name, discovery_prefix)
+        super().__init__(name,
+                         device_index=device_index,
+                         discovery_prefix=discovery_prefix)
         self.unit = unit
         self.var_name = var_name
         self.dev_cls = device_class

@@ -14,9 +14,11 @@ DISCO_TIME = const(30)
 
 class MQTTDiscoverable:
     component_type = None
-    def __init__(self, name, msg_cb=None, discovery_prefix = 'homeassistant'):
+    def __init__(self, name, msg_cb=None,
+                 device_index=0, discovery_prefix = 'homeassistant'):
         self.name = name
         self.discovery_prefix = discovery_prefix
+        self.device_index = device_index
         self.mqtt_client = MQTTClient(
             client_id=self.entity_id,
             subs_cb=msg_cb,
@@ -24,7 +26,14 @@ class MQTTDiscoverable:
 
     @property
     def entity_id(self):
-        return '{}-{}'.format(uname().sysname, hexlify(unique_id()).decode())
+        entity_id = '{}-{}'.format(uname().sysname,
+                                   hexlify(unique_id()).decode())
+        device_index = self.device_index
+        if device_index:
+            return '{}-{}'.format(entity_id, device_index)
+
+        return entity_id
+
 
     @property
     def topic_prefix(self):
@@ -45,15 +54,14 @@ class MQTTDiscoverable:
         raise NotImplementedError()
 
     async def publish_config(self):
-        logging.info('Sending %s discoverability config',
-                     self.__class__.__name__)
+        topic = '{}/config'.format(self.topic_prefix)
+        logging.info('Sending %s discoverability config to %s',
+                     self.__class__.__name__, topic)
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
         await self.mqtt_client.publish(
-            '{}/config'.format(self.topic_prefix),
-            ujson.dumps(disco_config).encode('utf-8')
-        )
+            topic, ujson.dumps(disco_config).encode('utf-8'))
 
     @property
     def app_state(self):
@@ -62,7 +70,8 @@ class MQTTDiscoverable:
     async def publish_state(self):
         await self.mqtt_client.publish(
             '{}/state'.format(self.topic_prefix),
-            ujson.dumps(self.app_state)
+            ujson.dumps(self.app_state),
+            qos=1
         )
 
     async def disco_loop(self):
