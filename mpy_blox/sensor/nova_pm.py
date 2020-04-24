@@ -1,6 +1,6 @@
 import logging
 import struct
-from uasyncio import StreamReader, StreamWriter
+from uasyncio import StreamReader, StreamWriter, wait_for
 from machine import UART
 
 PROT_HEADER = const(0xAA)
@@ -13,6 +13,7 @@ SLEEP_CMD = const(0xB4060100)
 WAKEUP_CMD = const(0xB4060101)
 
 MY_SENSOR_ADDR = const(0x151B)
+COMMAND_TIMEOUT = const(2)
 
 class NovaPM:
     def __init__(self, uart):
@@ -48,7 +49,7 @@ class NovaPM:
         await sw.drain()
 
         # Read response
-        msg = await self.sr.read(PROT_RESP_LENGTH)
+        msg = await wait_for(self.sr.read(PROT_RESP_LENGTH), COMMAND_TIMEOUT)
 
         if not msg:
             raise RuntimeError("NovaPM Communication timeout")
