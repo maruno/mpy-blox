@@ -8,6 +8,7 @@ SETTINGS_PATH = '/settings.json'
 
 
 def read_settings(settings_path=None):
+    global config
     logging.basicConfig(level=logging.DEBUG)
     try:
         with open(settings_path or SETTINGS_PATH, 'r') as settings_file:
