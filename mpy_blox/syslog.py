@@ -13,8 +13,10 @@ LOG_PRIORITIES = {
     }
 
 class SyslogHandler(Handler):
-    def __init__(self, hostname):
+    def __init__(self, hostname, split_lines=True):
         super().__init__()
+        self.split_lines = split_lines
+
         try:
             addr = usocket.getaddrinfo(hostname, 514, 0, usocket.SOCK_DGRAM)[0]
         except IndexError:
@@ -26,11 +28,17 @@ class SyslogHandler(Handler):
     def format_syslog(self, record):
         prio = (LOG_USER << 3) | LOG_PRIORITIES[record.levelname]
         sl_prio = "<{}>".format(prio).encode('utf-8')
+
         msg = self.formatter.format(record).encode('utf-8') 
-        return sl_prio + msg
+        if not self.split_lines:
+            return (sl_prio + msg,)
+
+        return [sl_prio + line for line in msg.splitlines()]
 
     def emit(self, record):
-        self.sock.sendto(self.format_syslog(record), self.sock_addr)
+        sock_addr = self.sock_addr
+        for msg in self.format_syslog(record):
+            self.sock.sendto(msg, sock_addr)
 
 
 def init_syslog(config):
