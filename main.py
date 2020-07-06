@@ -4,8 +4,10 @@ import network
 from esp import osdebug
 from machine import RTC
 from ntptime import settime
-from utime import sleep
+from sys import print_exception
 from uerrno import ETIMEDOUT
+from uio import StringIO
+from utime import sleep
 
 from mpy_blox.config import read_settings
 from mpy_blox.syslog import init_syslog
@@ -56,7 +58,16 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except Exception:
-        logging.critical("Master exception handler, rebooting")
+    except Exception as e:
+        logging.critical(
+            "Master exception handler, rebooting...\n")
+
+        exception_info_io = StringIO()
+        print_exception(e, exception_info_io)
+        logging.critical(
+            "%s: %s, Exception info follows\n\n%s",
+            e.__class__.__name__, e,
+            exception_info_io.getvalue())
+
         from machine import reset
         reset()

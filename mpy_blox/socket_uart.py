@@ -12,12 +12,6 @@ class SocketUART:
         self.port = port
         self.baud = baud
 
-    def start(self):
-        self.uart.init(self.baud)
-
-    def stop(self):
-        self.uart.deinit()
-
     def serve_forever(self):
         server_socket = usocket.socket()
 
@@ -32,8 +26,7 @@ class SocketUART:
             try:
                 self.serve_client(c_socket)
             except Exception:
-                logging.error("Unknown error handling client connection",
-                              exc_info=True)
+                logging.error("Unknown error handling client connection")
             finally:
                 c_socket.close()
 
