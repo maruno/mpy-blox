@@ -29,11 +29,16 @@ class SyslogHandler(Handler):
         prio = (LOG_USER << 3) | LOG_PRIORITIES[record.levelname]
         sl_prio = "<{}>".format(prio).encode('utf-8')
 
-        msg = self.formatter.format(record).encode('utf-8') 
+        msg = self.formatter.format(record)
         if not self.split_lines:
-            return (sl_prio + msg,)
+            return (sl_prio + msg.encode('utf-8'),)
 
-        return [sl_prio + line for line in msg.splitlines()]
+        try:
+            lines = msg.splitlines()
+        except AttributeError:
+            lines = msg.split('\n', -1)
+
+        return [sl_prio + line.encode('utf-8') for line in lines]
 
     def emit(self, record):
         sock_addr = self.sock_addr
