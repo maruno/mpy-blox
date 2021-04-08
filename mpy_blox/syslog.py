@@ -1,6 +1,6 @@
 import usocket
 
-from logging import Handler, getLogger
+from logging import ERROR, INFO, Handler, getLogger
 
 LOG_USER = 1
 
@@ -13,10 +13,11 @@ LOG_PRIORITIES = {
     }
 
 class SyslogHandler(Handler):
-    def __init__(self, hostname, split_lines=True):
+    def __init__(self, hostname, syslog_level=ERROR, split_lines=True):
         super().__init__()
         self.split_lines = split_lines
         self.hostname = hostname
+        self.lvl = syslog_level
 
         try:
             addr = usocket.getaddrinfo(hostname, 514, 0, usocket.SOCK_DGRAM)[0]
@@ -46,6 +47,9 @@ class SyslogHandler(Handler):
         return [sl_prio + line.encode('utf-8') for line in lines]
 
     def emit(self, record):
+        if record.levelno < self.lvl:
+            return
+
         sock_addr = self.sock_addr
         for msg in self.format_syslog(record):
             try:
@@ -57,14 +61,18 @@ class SyslogHandler(Handler):
 def init_syslog(config):
     try:
         syslog_host = config['logging.syslog.hostname']
-        getLogger().addHandler(SyslogHandler(syslog_host))
+        try:
+            syslog_level = int(config['logging.syslog.level'])
+        except KeyError:
+            syslog_level = ERROR
+        getLogger().addHandler(SyslogHandler(syslog_host, syslog_level))
     except KeyError:
         pass
 
 
 def main():
     import logging
-    logging.getLogger().addHandler(SyslogHandler('172.16.3.1'))
+    logging.getLogger().addHandler(SyslogHandler('172.16.3.1', INFO))
     logging.info("Test from MicroPython SyslogHandler")
 
 if __name__ == '__main__':
