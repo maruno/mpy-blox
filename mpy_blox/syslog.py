@@ -16,6 +16,7 @@ class SyslogHandler(Handler):
     def __init__(self, hostname, split_lines=True):
         super().__init__()
         self.split_lines = split_lines
+        self.hostname = hostname
 
         try:
             addr = usocket.getaddrinfo(hostname, 514, 0, usocket.SOCK_DGRAM)[0]
@@ -24,6 +25,10 @@ class SyslogHandler(Handler):
 
         self.sock = usocket.socket(addr[0], usocket.SOCK_DGRAM, addr[2]) 
         self.sock_addr = addr[-1]
+
+    def __str__(self):
+        return "<{} hostname={}>".format(self.__class__.__name__,
+                                         self.hostname)
     
     def format_syslog(self, record):
         prio = (LOG_USER << 3) | LOG_PRIORITIES[record.levelname]
@@ -43,7 +48,10 @@ class SyslogHandler(Handler):
     def emit(self, record):
         sock_addr = self.sock_addr
         for msg in self.format_syslog(record):
-            self.sock.sendto(msg, sock_addr)
+            try:
+                self.sock.sendto(msg, sock_addr)
+            except OSError:
+                print("{}: Unable to send".format(self))
 
 
 def init_syslog(config):
