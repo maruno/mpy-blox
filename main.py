@@ -1,9 +1,9 @@
 import uasyncio as asyncio
 import logging
 import network
+import ntptime
 from esp import osdebug
 from machine import RTC
-from ntptime import settime
 from sys import print_exception
 from uerrno import ETIMEDOUT
 from uio import StringIO
@@ -26,10 +26,14 @@ def connect_wlan(config):
     logging.info('WLAN connected!')
 
 
-def sync_ntp():
+def sync_ntp(config):
+    ntp_host = config.get('ntp_host', 'pool.ntp.org')
+    logging.info('Synchronising time with %s', ntp_host)
+
+    ntptime.host = ntp_host
     while True:
         try:
-            settime()
+            ntptime.settime()
         except OSError as e:
             if e.args[0] != ETIMEDOUT:
                 raise
@@ -44,7 +48,7 @@ def main():
     
     connect_wlan(config)
     sleep(1.0)
-    sync_ntp()
+    sync_ntp(config)
     init_syslog(config)
     
     # We are booted, no more need for kernel messages
