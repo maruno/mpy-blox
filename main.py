@@ -9,7 +9,7 @@ from uerrno import ETIMEDOUT
 from uio import StringIO
 from utime import sleep
 
-from mpy_blox.config import read_settings
+from mpy_blox.config import init_config
 from mpy_blox.syslog import init_syslog
 
 rtc = RTC()
@@ -43,7 +43,7 @@ def sync_ntp(config):
 
 
 def main():
-    config = read_settings()
+    config = init_config()
     logging.debug("Read config %s", config)
     
     connect_wlan(config)
