@@ -18,7 +18,9 @@ def connect_wlan(config):
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     wlan.config(dhcp_hostname=config.get('hostname', 'espressif'))
-    wlan.connect(config['wlan.ssid'], config['wlan.psk'])
+
+    secure_cfg = config['secure']
+    wlan.connect(secure_cfg['wlan.ssid'], secure_cfg['wlan.psk'])
     while not wlan.isconnected():
         logging.info('Waiting for WLAN connection...')
         sleep(1.0)
