@@ -22,6 +22,7 @@ class MQTTDiscoverable:
         self.mqtt_client = MQTTClient(
             client_id=self.entity_id,
             subs_cb=msg_cb,
+            password=config['mqtt.password'],
             **config['mqtt'])
 
     @property
