@@ -127,3 +127,13 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# PyMakr
+pymakr.conf
+
+# Mpy_blox user config files
+settings.json
+provision.json
+
+# Mpy_blox user main
+user_main.py
