@@ -29,7 +29,7 @@ def connect_wlan(config):
 
 
 def sync_ntp(config):
-    ntp_host = config.get('ntp_host', 'pool.ntp.org')
+    ntp_host = config.get('ntp.host', 'pool.ntp.org')
     logging.info('Synchronising time with %s', ntp_host)
 
     ntptime.host = ntp_host
