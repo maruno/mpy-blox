@@ -12,8 +12,14 @@ def connect_wlan(config):
     wlan.active(True)
     wlan.config(dhcp_hostname=config.get('hostname', 'espressif'))
 
-    secure_cfg = config['secure']
-    wlan.connect(secure_cfg['wlan.ssid'], secure_cfg['wlan.psk'])
+    try:
+        secure_cfg = config['secure']
+        wlan.connect(secure_cfg['wlan.ssid'], secure_cfg['wlan.psk'])
+    except KeyError:
+        logging.warning("Network credentials not found. Device provisioned? "
+                        "Can't boot with network support")
+        return
+
     while not wlan.isconnected():
         logging.info('Waiting for WLAN connection...')
         sleep(1.0)
