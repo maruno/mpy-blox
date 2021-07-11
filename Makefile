@@ -38,11 +38,18 @@ purge-lib:
 	@echo "Purging device of all libraries"
 	@$(MPREMOTE_CMD) run scripts/purge.py
 
+.PHONY: provision
+provision:
+	@[ -f provision.json ] && $(MPREMOTE_CMD) cp provision.json :/provision.json
+
+.PHONY: unprovision
+unprovision:
+	@echo "Clearing provisioning config from device"
+	@$(MPREMOTE_CMD) run scripts/unprovision.py
 
 .PHONY: deploy-app
-deploy-app:
+deploy-app: provision
 	@echo "Deploying $(DIST_VERSION) app to device"
-	@[ -f provision.json ] && $(MPREMOTE_CMD) cp provision.json :/provision.json
 	@$(MPREMOTE_CMD) cp settings.json :/settings.json
 	@$(MPREMOTE_CMD) cp main.py \:/main.py
 
