@@ -4,48 +4,15 @@
 
 import uasyncio as asyncio
 import logging
-import network
-import ntptime
 from esp import osdebug
-from machine import RTC
+from machine import reset
 from sys import print_exception
-from uerrno import ETIMEDOUT
 from uio import StringIO
-from utime import sleep
 
 from mpy_blox.config import init_config
+from mpy_blox.network import connect_wlan
 from mpy_blox.syslog import init_syslog
-
-rtc = RTC()
-
-def connect_wlan(config):
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    wlan.config(dhcp_hostname=config.get('hostname', 'espressif'))
-
-    secure_cfg = config['secure']
-    wlan.connect(secure_cfg['wlan.ssid'], secure_cfg['wlan.psk'])
-    while not wlan.isconnected():
-        logging.info('Waiting for WLAN connection...')
-        sleep(1.0)
-    
-    logging.info('WLAN connected!')
-
-
-def sync_ntp(config):
-    ntp_host = config.get('ntp.host', 'pool.ntp.org')
-    logging.info('Synchronising time with %s', ntp_host)
-
-    ntptime.host = ntp_host
-    while True:
-        try:
-            ntptime.settime()
-        except OSError as e:
-            if e.args[0] != ETIMEDOUT:
-                raise
-        else:
-            break
-    logging.info('NTP time synchronised: %s', rtc.datetime())
+from mpy_blox.time import sync_ntp
 
 
 def main():
@@ -53,7 +20,6 @@ def main():
     logging.debug("Read config %s", config)
     
     connect_wlan(config)
-    sleep(1.0)
     sync_ntp(config)
     init_syslog(config)
     
@@ -79,5 +45,4 @@ if __name__ == '__main__':
             e.__class__.__name__, e,
             exception_info_io.getvalue())
 
-        from machine import reset
         reset()
