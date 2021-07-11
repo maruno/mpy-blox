@@ -21,6 +21,10 @@ In the examples a sample `settings.json` and `provision.json` is provided.
 ## Makefile instructions
 The Makefile provides a simple interface to install and provision a device with the Mpy-BLOX framework.
 
+### Device selection
+The Make variable `DEVICE` allows you to set the device to connect to, otherwise the first device found is used.
+Be sure to set `DEVICE` when having multiple (serial) devices connected, e.g.: `make DEVICE=COM4 repl`.
+
 ### Install lib/app framework
 * deploy-lib: Installs the mpy_blox library to /lib to use Mpy-BLOX as as library-only framework.
 * deploy-app: Installs main.py, settings file and provisioning for the full Mpy-BLOX managed app framework.
