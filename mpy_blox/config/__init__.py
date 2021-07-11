@@ -26,8 +26,8 @@ class OptionalSecureDict(dict):
             return super().__getitem__(k)
 
 
-secure_nvs = SecureNVS('sec_cfg')
-config = OptionalSecureDict(secure_nvs)
+secure_nvs_store = SecureNVS('sec_cfg')
+config = OptionalSecureDict(secure_nvs_store)
 
 SETTINGS_PATH = '/settings.json'
 PROVISION_PATH = '/provision.json'
@@ -48,7 +48,7 @@ def read_settings(settings_path=None):
     return config
 
 def ingest_provision_config():
-    global secure_nvs
+    global secure_nvs_store
     try:
         provision_path = PROVISION_PATH
         with open(provision_path, 'r') as provision_f:
@@ -56,9 +56,9 @@ def ingest_provision_config():
     except OSError:
         return  # No new provision config
 
-    logging.info("Ingesting provision config: %s", provision_config)
-    secure_nvs.update(provision_config)
-    secure_nvs.commit()
+    logging.info("Ingesting provision config from %s", PROVISION_PATH)
+    secure_nvs_store.update(provision_config)
+    secure_nvs_store.commit()
 
     # Provision file needs to be removed
     uos.remove(provision_path)
