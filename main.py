@@ -15,20 +15,31 @@ from mpy_blox.syslog import init_syslog
 from mpy_blox.time import sync_ntp
 
 
+def start_network(config):
+    if config.get('network.disabled', False):
+        logging.info("Networking disabled")
+        return
+
+    connect_wlan(config)
+    sync_ntp(config)
+    init_syslog(config)
+
+
 def main():
     config = init_config()
     logging.debug("Read config %s", config)
     
-    connect_wlan(config)
-    sync_ntp(config)
-    init_syslog(config)
+    start_network(config)
     
     # We are booted, no more need for kernel messages
     osdebug(None)
     logging.info('Mpy-BLOX succesfully booted')
     
-    from user_main import user_main
-    asyncio.run(user_main())
+    try:
+        from user_main import user_main
+        asyncio.run(user_main())
+    except ImportError:
+        logging.info("Missing user_main, going to REPL")
 
 
 if __name__ == '__main__':
