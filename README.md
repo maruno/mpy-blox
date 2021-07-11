@@ -10,6 +10,14 @@ User entrypoint will be expected in module `user_main` as `async def user_main()
 
 *This project should not be considered production quality. Use at your own risk.*
 
+## Configuration
+There's 2 config locations, the main config is loaded from `settings.json`.
+There is also a secured configuration that should be provisioned once.
+This, for now, can only be done using an auto-deleted `provision.json`.
+The secured configuration is stored insude of ESP32-NVS, *weakly* encrypted with the *device ID*.
+
+In the examples a sample `settings.json` and `provision.json` is provided.
+
 ## Makefile instructions
 The Makefile provides a simple interface to install and provision a device with the Mpy-BLOX framework.
 
