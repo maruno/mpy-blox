@@ -1,0 +1,5 @@
+{
+    "wlan.ssid": "SSID",
+    "wlan.psk": "hunter2",
+    "mqtt.password": "hunter2"
+}
