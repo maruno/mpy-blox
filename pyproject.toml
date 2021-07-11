@@ -13,6 +13,9 @@ exclude = [
     "pyproject.toml",
     "setup.py"
 ]
+include = [
+    "mqtt_as.mpy"
+]
 
 [tool.poetry.build]
 generate-setup-file = false
