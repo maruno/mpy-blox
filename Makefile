@@ -28,7 +28,7 @@ dist: clean
 
 .PHONY: deploy-lib
 deploy-lib: dist
-	@echo "Deploying $(DIST_VERSION) to device"
+	@echo "Deploying $(DIST_VERSION) lib to device"
 	@$(MPREMOTE_CMD) cp dist/$(DIST_VERSION).upip.tgz :/deploy.tgz
 	@$(MPREMOTE_CMD) run scripts/deploy.py
 	@$(MPREMOTE_CMD) rm :/deploy.tgz
@@ -37,3 +37,15 @@ deploy-lib: dist
 purge-lib:
 	@echo "Purging device of all libraries"
 	@$(MPREMOTE_CMD) run scripts/purge.py
+
+
+.PHONY: deploy-app
+deploy-app:
+	@echo "Deploying $(DIST_VERSION) app to device"
+	@[ -f provision.json ] && $(MPREMOTE_CMD) cp provision.json :/provision.json
+	@$(MPREMOTE_CMD) cp settings.json :/settings.json
+	@$(MPREMOTE_CMD) cp main.py \:/main.py
+
+.PHONY: repl
+repl:
+	@$(MPREMOTE_CMD) repl
