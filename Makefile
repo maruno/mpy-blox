@@ -51,8 +51,18 @@ unprovision:
 deploy-app: provision
 	@echo "Deploying $(DIST_VERSION) app to device"
 	@$(MPREMOTE_CMD) cp settings.json :/settings.json
-	@$(MPREMOTE_CMD) cp main.py \:/main.py
+	@$(MPREMOTE_CMD) cp main.py :/main.py
+
+.PHONY: purge-app
+purge-app:
+	@echo "Purging device of main app!"
+	@$(MPREMOTE_CMD) rm :/settings.json
+	@$(MPREMOTE_CMD) rm :/main.py
 
 .PHONY: repl
 repl:
 	@$(MPREMOTE_CMD) repl
+
+.PHONY: mounted-repl
+mounted-repl:
+	@$(MPREMOTE_CMD) mount . repl
