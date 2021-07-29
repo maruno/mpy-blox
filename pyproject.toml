@@ -11,11 +11,11 @@ packages = [
 exclude = [
     "PKG-INFO",
     "setup.py",
-    "logging/LICENSE",
-    "logging/README.md"
 ]
 include = [
-    "mqtt_as.mpy"
+    "mqtt_as.mpy",
+    "README.md",
+    "main.py"
 ]
 
 [tool.poetry.build]
