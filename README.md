@@ -21,6 +21,12 @@ In the examples a sample `settings.json` and `provision.json` is provided.
 ## Makefile instructions
 The Makefile provides a simple interface to install and provision a device with the Mpy-BLOX framework.
 
+### Requirements
+The buildsystem uses the default micropython tool *mpremote* to communicate with your board.
+
+When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
+missing direct serial communication on WSL2. There may be limitations but seems to work well through /mnt.
+
 ### Device selection
 The Make variable `DEVICE` allows you to set the device to connect to, otherwise the first device found is used.
 Be sure to set `DEVICE` when having multiple (serial) devices connected, e.g.: `make DEVICE=COM4 repl`.
@@ -35,3 +41,4 @@ Be sure to set `DEVICE` when having multiple (serial) devices connected, e.g.: `
 
 ### Misc
 * repl: Open a REPL
+* mounted-repl: Open a REPL with the current directory mounted as a remote filesystem.
