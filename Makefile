@@ -1,5 +1,7 @@
 SPACE := $(eval) $(eval)
-DIST_VERSION := $(subst $(SPACE),-,$(shell poetry version))
+POETRY_VERSION = $(shell poetry version)
+DIST_VERSION := $(subst $(SPACE),-,$(POETRY_VERSION))
+WHEEL_VERSION := $(subst $(SPACE),-,$(subst -,_,$(POETRY_VERSION)))
 
 IS_WSL2 := $(findstring WSL2,$(shell uname -r))
 ifeq ($(IS_WSL2),WSL2)
@@ -23,15 +25,21 @@ clean:
 
 .PHONY: dist
 dist: clean
-	@poetry build -f sdist
-	@gzip -dc dist/$(DIST_VERSION).tar.gz | tar --delete $(DIST_VERSION)/PKG-INFO --delete $(DIST_VERSION)/pyproject.toml -o | gzip > dist/$(DIST_VERSION).upip.tgz
+	@poetry build
+	@echo Building micropython optimized wheel
+	@cd dist; wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
+	@echo "Byte-compiling for micropython"
+	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do mpy-cross $${py_file} && rm $${py_file}; done
+	@cd dist/$(WHEEL_VERSION)/$(WHEEL_VERSION).dist-info; echo "c\nTag: mpy-bytecode-esp32\n.\nw\nq" | ed WHEEL > /dev/null
+	@cd dist; wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; rm -r $(WHEEL_VERSION)
+	@echo "Creating deployment hardlink"
+	@cd dist; ln $(WHEEL_VERSION)-mpy-bytecode-esp32.whl mpy_blox-latest-mpy-bytecode-esp32.whl
 
 .PHONY: deploy-lib
 deploy-lib: dist
 	@echo "Deploying $(DIST_VERSION) lib to device"
-	@$(MPREMOTE_CMD) cp dist/$(DIST_VERSION).upip.tgz :/deploy.tgz
-	@$(MPREMOTE_CMD) run scripts/deploy.py
-	@$(MPREMOTE_CMD) rm :/deploy.tgz
+	@$(MPREMOTE_CMD) mount . run scripts/deploy_wheel.py
 
 .PHONY: purge-lib
 purge-lib:
