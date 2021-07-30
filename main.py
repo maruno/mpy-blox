@@ -27,7 +27,6 @@ def start_network(config):
 
 def main():
     config = init_config()
-    logging.debug("Read config %s", config)
     
     start_network(config)
     
