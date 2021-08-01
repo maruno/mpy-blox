@@ -39,7 +39,7 @@ dist: clean
 .PHONY: deploy-lib
 deploy-lib: dist
 	@echo "Deploying $(DIST_VERSION) lib to device"
-	@$(MPREMOTE_CMD) mount . run scripts/deploy_wheel.py
+	@$(MPREMOTE_CMD) mount . run scripts/mount_enforcer.py run scripts/deploy_wheel.py
 
 .PHONY: purge-lib
 purge-lib:
@@ -73,4 +73,4 @@ repl:
 
 .PHONY: mounted-repl
 mounted-repl:
-	@$(MPREMOTE_CMD) mount . repl
+	@$(MPREMOTE_CMD) mount . run scripts/mount_enforcer.py repl
