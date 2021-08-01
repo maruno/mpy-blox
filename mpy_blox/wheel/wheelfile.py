@@ -3,44 +3,15 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import re
 from ucollections import OrderedDict
-import uhashlib
 
-from mpy_blox.base64 import urlsafe_b64decode, urlsafe_b64encode
+from mpy_blox.wheel import DIST_INFO_RE
+from mpy_blox.wheel.info import WheelPackage, WheelRecordEntry
 from mpy_blox.zipfile import BadZipFile, ZipFile, ZipInfo
-
-DIST_INFO_RE = re.compile(
-    r"^(((.+?)-(.+?))(-(P\d[^-]*))?.dist-info/)RECORD$")
 
 
 class BadWheelFile(BadZipFile):
     pass
-
-
-class WheelRecordEntry:
-    def __init__(self, record_line):
-        self.name, checksum_line, size = record_line.rsplit(',', 2)
-
-        self.checksum = self.checksum_algo = None
-        if checksum_line:
-            self.checksum_algo, encoded_checksum = checksum_line.split('=', 1)
-            self.checksum = urlsafe_b64decode(encoded_checksum)
-
-        self.size =  int(size) if size else None
-
-    @property
-    def checksum_hasher(self):
-        algo = self.checksum_algo
-        return getattr(uhashlib, algo) if algo else None
-
-    def __str__(self):
-        return ("<WheelRecordEntry name="
-                "{}, checksum_algo={}, checksum={}>".format(
-                    self.name,
-                    self.checksum_algo,
-                    urlsafe_b64encode(self.checksum) if self.checksum else None
-                ))
 
 
 class WheelFile(ZipFile):
@@ -48,26 +19,32 @@ class WheelFile(ZipFile):
         super().__init__(file_obj)
 
         dist_info_re = DIST_INFO_RE
-        self.dist_info_path = None
+        dist_info_path = None
         for key in self:
             m = dist_info_re.match(key)
             if m:
                self.pkg_name = m.group(3)
                self.pkg_version = m.group(4)
-               self.dist_info_path = m.group(1)
+               dist_info_path = m.group(1)
                break
 
-        if not self.dist_info_path:
+        if not dist_info_path:
             raise BadWheelFile("Missing dist-info path")
 
-        self.wheel_record = wheel_record = OrderedDict()
-        raw_record = self.read(self.dist_info_path + 'RECORD')
-        for line in raw_record.decode().splitlines():
-            record_entry = WheelRecordEntry(line)
-            wheel_record[record_entry.name] = record_entry
+        # Read in package metadata and record
+        self.package = None
+        self.package = package = WheelPackage(
+            self.read(dist_info_path + 'METADATA').decode(),
+            self.read(dist_info_path + 'RECORD').decode())
 
-        logging.debug("Wheel record contains %s entries",
-                      len(self.wheel_record))
+        logging.debug("Read wheel package: %s", package)
+
+    @property
+    def wheel_record(self):
+        if self.package:
+            return self.package.wheel_record
+        else:
+            return {}
 
     def __str__(self):
         return "<WheelFile pkg_name={}, pkg_version={}>".format(
