@@ -19,6 +19,17 @@ class WheelRecordEntry:
 
         self.size =  int(size) if size else None
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+
+        if self.checksum is None:
+            return False
+
+        return (self.name == other.name
+                and self.checksum_algo == other.checksum_algo
+                and self.checksum == other.checksum)
+
     @property
     def checksum_hasher(self):
         algo = self.checksum_algo
