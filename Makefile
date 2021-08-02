@@ -40,6 +40,8 @@ dist: clean
 deploy-lib: dist
 	@echo "Deploying $(DIST_VERSION) lib to device"
 	@$(MPREMOTE_CMD) mount . run scripts/mount_enforcer.py run scripts/deploy_wheel.py
+	@echo "Deployment succeeded, resetting device"
+	@$(MPREMOTE_CMD) reset
 
 .PHONY: purge-lib
 purge-lib:
