@@ -60,3 +60,35 @@ def install(wheel_file, prefix=None):
         makedirs(folder)
         with open(output_path, 'wb') as output_f:
             output_f.write(wheel_file.read(record_entry))
+
+
+def upgrade(pkg, wheel_file, prefix=None):
+    prefix = prefix or DEFAULT_PREFIX
+
+    processed_names = []
+    for name, new_record_entry in wheel_file.wheel_record.items():
+        output_path = prefix + name
+        try:
+            old_record_entry = pkg.wheel_record[name]
+            if old_record_entry == new_record_entry:
+                logging.debug("Skipping unchanged record %s", new_record_entry)
+                processed_names.append(name)
+                continue
+        except KeyError:
+            # New record, check folders
+            folder = output_path.rsplit('/', 1)[0]
+            makedirs(folder)
+
+        logging.info("%s -> %s", name, output_path)
+        with open(output_path, 'wb') as output_f:
+            output_f.write(wheel_file.read(new_record_entry))
+
+        processed_names.append(name)
+
+    for old_name in pkg.wheel_record:
+        if old_name in processed_names:
+            continue  # File upgraded
+
+        old_path = prefix + old_name
+        logging.info("Removing old package file %s", old_path)
+        uos.remove(old_path)
