@@ -32,11 +32,14 @@ def read_package(dist_info_path):
 def list_installed(prefix=None):
     prefix = prefix or DEFAULT_PREFIX
     dist_info_re = DIST_INFO_RE
-    for subfolder in uos.listdir(prefix):
-        m = dist_info_re.match(subfolder)
-        if m:
-            dist_info_path = prefix + m.group(1)
-            yield read_package(dist_info_path)
+    try:
+        for subfolder in uos.listdir(prefix):
+            m = dist_info_re.match(subfolder)
+            if m:
+                dist_info_path = prefix + m.group(1)
+                yield read_package(dist_info_path)
+    except OSError:
+        return ()
 
 
 def pkg_info(name, prefix=None):
