@@ -18,8 +18,10 @@ DISCO_TIME = const(30)
 
 class MQTTDiscoverable:
     component_type = None
+    include_top_level_device_cfg = True
+
     def __init__(self, name, msg_cb=None,
-                 device_index=0, discovery_prefix = 'homeassistant'):
+                 device_index=None, discovery_prefix = 'homeassistant'):
         self.name = name
         self.discovery_prefix = discovery_prefix
         self.device_index = device_index
@@ -47,12 +49,15 @@ class MQTTDiscoverable:
 
     @property
     def core_disco_config(self):
-       return {
-           '~': self.topic_prefix,
-           'name': self.name,
-           'unique_id': self.entity_id,
-           'stat_t': '~/state'
+        core_cfg = {
+           '~': self.topic_prefix
         }
+
+        if self.include_top_level_device_cfg:
+           core_cfg['name'] = self.name
+           core_cfg['unique_id'] = self.entity_id
+
+        return core_cfg
 
     @property
     def app_disco_config(self):
@@ -68,6 +73,22 @@ class MQTTDiscoverable:
         await self.mqtt_client.publish(
             topic, ujson.dumps(disco_config).encode('utf-8'))
 
+    async def disco_loop(self):
+        while True:
+            await self.publish_config()
+            await asyncio.sleep(DISCO_TIME)
+
+    async def connect(self):
+        await self.mqtt_client.connect()
+        self.disco_task = asyncio.create_task(self.disco_loop())
+
+
+class MQTTDiscoverableState(MQTTDiscoverable):
+    @property
+    def core_disco_config(self):
+        core_cfg = super().core_disco_config
+        core_cfg['stat_t'] = '~/state'
+
     @property
     def app_state(self):
         raise NotImplementedError()
@@ -79,22 +100,12 @@ class MQTTDiscoverable:
             qos=1
         )
 
-    async def disco_loop(self):
-        while True:
-            await self.publish_config()
-            await asyncio.sleep(DISCO_TIME)
-
-    async def connect(self):
-        await self.mqtt_client.connect()
-        self.disco_task = asyncio.create_task(self.disco_loop())
-
-
-class MQTTMutableDiscoverable(MQTTDiscoverable):
+class MQTTMutableDiscoverable(MQTTDiscoverableState):
     def __init__(self, name, msg_cb, discovery_prefix = 'homeassistant'):
         super().__init__(name, msg_cb, discovery_prefix)
 
     @property
     def core_disco_config(self):
         core_cfg = super().core_disco_config
-        core_cfg = '~/set'
+        core_cfg['cmd_t'] = '~/set'
         return core_cfg
