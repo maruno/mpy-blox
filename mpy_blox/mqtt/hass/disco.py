@@ -12,13 +12,17 @@ from ubinascii import hexlify
 from mqtt_as import MQTTClient
 
 from mpy_blox.config import config
+from mpy_blox.wheel import pkg_info
 
 DISCO_TIME = const(30)
 
 
 class MQTTDiscoverable:
+    _dev_registry = None
     component_type = None
     include_top_level_device_cfg = True
+    has_state = False
+    is_mutable = False
 
     def __init__(self, name, msg_cb=None,
                  device_index=None, discovery_prefix = 'homeassistant'):
@@ -32,15 +36,49 @@ class MQTTDiscoverable:
             **config['mqtt'])
 
     @property
+    def device_id(self):
+        return '{}-{}'.format(uname().sysname,
+                              hexlify(unique_id()).decode())
+
+    @property
     def entity_id(self):
-        entity_id = '{}-{}'.format(uname().sysname,
-                                   hexlify(unique_id()).decode())
         device_index = self.device_index
         if device_index:
-            return '{}-{}'.format(entity_id, device_index)
+            return '{}-{}'.format(self.device_id, device_index)
 
-        return entity_id
+        return self.device_id
 
+    @property
+    def dev_registry(self):
+        dev_reg = MQTTDiscoverable._dev_registry
+        entity_id = self.entity_id
+        if not dev_reg:
+            # Machine wide unique, cache
+            unix_name = uname()
+            dev_reg = {
+               'manufacturer': 'Mpy-BLOX',
+               'model': unix_name.machine,
+               'sw_version': '{} (Micropython {})'.format(
+                   pkg_info('mpy-blox').version,
+                   unix_name.version)
+            }
+
+            if 'device.suggested_area' in config:
+                dev_reg['suggested_area'] = config['device.suggested_area']
+
+            MQTTDiscoverable._dev_registry = dev_reg
+
+        entity_reg = {
+            'name': self.name,
+            'identifiers': [entity_id]
+        }
+        entity_reg.update(dev_reg)
+
+        device_id = self.device_id
+        if device_id != entity_id:
+           entity_reg['via_device'] = device_id
+
+        return entity_reg
 
     @property
     def topic_prefix(self):
@@ -50,12 +88,19 @@ class MQTTDiscoverable:
     @property
     def core_disco_config(self):
         core_cfg = {
-           '~': self.topic_prefix
+            '~': self.topic_prefix,
+            'device': self.dev_registry
         }
 
         if self.include_top_level_device_cfg:
-           core_cfg['name'] = self.name
-           core_cfg['unique_id'] = self.entity_id
+            core_cfg['name'] = self.name
+            core_cfg['unique_id'] = self.entity_id
+
+        if self.has_state:
+            core_cfg['stat_t'] = '~/state'
+
+        if self.is_mutable:
+            core_cfg['cmd_t'] = '~/set'
 
         return core_cfg
 
@@ -84,10 +129,7 @@ class MQTTDiscoverable:
 
 
 class MQTTDiscoverableState(MQTTDiscoverable):
-    @property
-    def core_disco_config(self):
-        core_cfg = super().core_disco_config
-        core_cfg['stat_t'] = '~/state'
+    has_state = True
 
     @property
     def app_state(self):
@@ -101,11 +143,4 @@ class MQTTDiscoverableState(MQTTDiscoverable):
         )
 
 class MQTTMutableDiscoverable(MQTTDiscoverableState):
-    def __init__(self, name, msg_cb, discovery_prefix = 'homeassistant'):
-        super().__init__(name, msg_cb, discovery_prefix)
-
-    @property
-    def core_disco_config(self):
-        core_cfg = super().core_disco_config
-        core_cfg['cmd_t'] = '~/set'
-        return core_cfg
+    is_mutable = True
