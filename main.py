@@ -37,8 +37,9 @@ def main():
     try:
         from user_main import user_main
         asyncio.run(user_main())
-    except ImportError:
+    except ImportError as e:
         logging.info("Missing user_main, going to REPL")
+        print_exception(e)
 
 
 if __name__ == '__main__':
