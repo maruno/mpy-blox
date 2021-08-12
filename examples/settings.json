@@ -2,6 +2,7 @@
     "hostname": "ESP32-helloworld",
     "logging.level": "INFO",
     "logging.syslog.hostname": "192.168.1.1",
+    "device.suggested_area": "Livingroom",
     "mqtt": {
         "server": "192.168.1.1",
         "username": "username"
