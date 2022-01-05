@@ -6,7 +6,6 @@ import logging
 import uasyncio as asyncio
 import ujson
 from machine import Pin
-from ubinascii import hexlify
 
 from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
 

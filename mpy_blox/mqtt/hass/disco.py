@@ -6,7 +6,7 @@ import logging
 import ujson
 import uasyncio as asyncio
 from uos import uname
-from machine import Pin, unique_id
+from machine import unique_id
 from ubinascii import hexlify
 
 from mqtt_as import MQTTClient
