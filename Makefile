@@ -51,6 +51,7 @@ purge-lib:
 .PHONY: provision
 provision:
 	@[ -f provision.json ] && $(MPREMOTE_CMD) cp provision.json :/provision.json
+	@[ -f user_main.py ] && $(MPREMOTE_CMD) cp user_main.py :/user_main.py
 
 .PHONY: unprovision
 unprovision:
