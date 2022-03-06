@@ -5,19 +5,19 @@
 import logging
 import uasyncio as asyncio
 import ujson
-from machine import Pin
 
 from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
+from mpy_blox.control.light.pin_based import PinBasedLightControl
 
 
 class MQTTLight(MQTTMutableDiscoverable):
     component_type = 'light'
 
-    def __init__(self, name, pin_id, discovery_prefix = 'homeassistant'):
+    def __init__(self, name, light_control, discovery_prefix = 'homeassistant'):
         super().__init__(name,
                          msg_cb=self.msg_rcvd,
                          discovery_prefix=discovery_prefix)
-        self.pin = Pin(pin_id, Pin.OUT)
+        self.light_control = light_control
 
     @property
     def app_disco_config(self):
@@ -26,7 +26,7 @@ class MQTTLight(MQTTMutableDiscoverable):
     @property
     def app_state(self):
         return {
-            'state': 'ON' if self.pin.value() else 'OFF'
+            'state': 'ON' if self.light_control.power_state else 'OFF'
         }
 
     def msg_rcvd(self, topic, msg, retained):
@@ -34,7 +34,7 @@ class MQTTLight(MQTTMutableDiscoverable):
         logging.info('Received message for %s: %s', topic.decode(), msg)
 
         if 'state' in msg:
-            self.pin.value(msg['state'] == 'ON')
+            self.light_control.power_state = msg['state'] == 'ON'
             asyncio.create_task(self.publish_state())
     
     async def listen(self):
@@ -47,8 +47,8 @@ class MQTTLight(MQTTMutableDiscoverable):
 
 
 async def async_main():
-    # Setup closet lights on pin D2 (GPIO 4)
-    mqtt_light = MQTTLight('Closet lights', 4)
+    # Setup closet lights on GPIO 4
+    mqtt_light = MQTTLight('Closet lights', PinBasedLightControl(4))
     print("Topic prefix: {}".format(mqtt_light.topic_prefix))
 
     loop = asyncio.get_event_loop()
