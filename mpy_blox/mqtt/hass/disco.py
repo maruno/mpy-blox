@@ -5,9 +5,9 @@
 import logging
 import ujson
 import uasyncio as asyncio
-from uos import uname
 from machine import unique_id
 from ubinascii import hexlify
+from uos import uname
 
 from mqtt_as import MQTTClient
 
@@ -126,6 +126,10 @@ class MQTTDiscoverable:
     async def connect(self):
         await self.mqtt_client.connect()
         self.disco_task = asyncio.create_task(self.disco_loop())
+
+    async def disconnect(self):
+        self.disco_task.cancel()
+        await self.mqtt_client.disconnect()
 
 
 class MQTTDiscoverableState(MQTTDiscoverable):
