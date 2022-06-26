@@ -35,16 +35,28 @@ class WheelFile(ZipFile):
         self.package = None
         self.package = package = WheelPackage(
             self.read(dist_info_path + 'METADATA').decode(),
+            self.read(dist_info_path + 'WHEEL').decode(),
             self.read(dist_info_path + 'RECORD').decode())
 
         logging.debug("Read wheel package: %s", package)
 
     @property
+    def metadata(self):
+        if self.package:
+            return self.package.metadata
+        return {}
+
+    @property
+    def wheel_info(self):
+        if self.package:
+            return self.package.wheel_info
+        return {}
+
+    @property
     def wheel_record(self):
         if self.package:
             return self.package.wheel_record
-        else:
-            return {}
+        return {}
 
     def __str__(self):
         return "<WheelFile pkg_name={}, pkg_version={}>".format(

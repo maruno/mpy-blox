@@ -20,13 +20,22 @@ class WheelExistingInstallation(Exception):
         self.existing_pkg = pkg
 
 
+class WheelUpgradeTagMismatch(Exception):
+    def __init__(self, expected_tag):
+        super().__init__(
+            "Package tag mismatch, expected: {}".format(expected_tag))
+        self.expected_tag = expected_tag
+
+
 def read_package(dist_info_path):
     with open(dist_info_path + '/METADATA', 'rt') as metadata_f:
         pep314_metadata = metadata_f.read()
+    with open(dist_info_path + '/WHEEL', 'rt') as wheel_info_f:
+        pep314_wheel_info = wheel_info_f.read()
     with open(dist_info_path + '/RECORD', 'rt') as record_f:
         record_contents = record_f.read()
 
-    return WheelPackage(pep314_metadata, record_contents)
+    return WheelPackage(pep314_metadata, pep314_wheel_info, record_contents)
 
 
 def list_installed(prefix=None):
@@ -67,6 +76,10 @@ def install(wheel_file, prefix=None):
 
 def upgrade(pkg, wheel_file, prefix=None):
     prefix = prefix or DEFAULT_PREFIX
+
+    expected_tag = pkg.wheel_info['Tag']
+    if expected_tag != wheel_file.wheel_info['Tag']:
+        raise WheelUpgradeTagMismatch(expected_tag)
 
     processed_names = []
     for name, new_record_entry in wheel_file.wheel_record.items():
