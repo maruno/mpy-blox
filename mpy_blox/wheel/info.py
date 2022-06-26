@@ -76,8 +76,9 @@ class WheelRecord:
 
 
 class WheelPackage:
-    def __init__(self, pep314_metadata, record_contents):
+    def __init__(self, pep314_metadata, pep314_wheel_info, record_contents):
         self.metadata = WheelMetadata(pep314_metadata)
+        self.wheel_info = WheelMetadata(pep314_wheel_info)
         self.wheel_record = WheelRecord(record_contents)
 
     @property
