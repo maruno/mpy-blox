@@ -24,8 +24,10 @@ The Makefile provides a simple interface to install and provision a device with 
 ### Requirements
 The buildsystem uses the default micropython tool *mpremote* to communicate with your board.
 
-When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
+* **Beware of changing Micropython bytecode versions**, this project assumes version **mpy6**, introduced in micropython v1.19!
+* When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
 missing direct serial communication on WSL2. There may be limitations but seems to work well through /mnt.
+* MQTT-as as a frozen module from maruno/micropython-mqtt, see #18
 
 ### Device selection
 The Make variable `DEVICE` allows you to set the device to connect to, otherwise the first device found is used.
