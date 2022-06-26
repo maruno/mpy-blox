@@ -10,7 +10,7 @@ from mpy_blox.wheel.wheelfile import WheelFile
 logging.basicConfig(level=logging.INFO)
 
 logging.info("Opening WheelFile")
-with open('/remote/dist/mpy_blox-latest-mpy-bytecode-esp32.whl', 'rb') as f:
+with open('/remote/dist/mpy_blox-latest-mpy6-bytecode-esp32.whl', 'rb') as f:
     wheel_file = WheelFile(f)
     try:
         wheel.install(wheel_file)
