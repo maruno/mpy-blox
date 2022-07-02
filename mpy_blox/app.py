@@ -62,7 +62,7 @@ def main():
         print_exception(e)
 
 
-if __name__ == '__main__':
+def main_except_reset():
     try:
         main()
     except Exception as e:
@@ -77,3 +77,7 @@ if __name__ == '__main__':
             exception_info_io.getvalue())
 
         reset()
+
+
+if __name__ == '__main__':
+    main()
