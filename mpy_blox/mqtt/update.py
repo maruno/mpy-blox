@@ -5,6 +5,7 @@
 import logging
 import uasyncio as asyncio
 import ujson
+from hashlib import sha256
 from io import BytesIO
 from machine import unique_id
 from ubinascii import hexlify
@@ -14,12 +15,13 @@ from mqtt_as import MQTTClient
 
 import mpy_blox.wheel as wheel
 from mpy_blox.config import config
+from mpy_blox.contextlib import suppress
 from mpy_blox.wheel.wheelfile import WheelFile
-
 
 PREFIX = 'mpypi/'
 CHANNEL_PREFIX = PREFIX + 'channels/'
 PACKAGES_PREFIX = PREFIX + 'packages/'
+
 
 class MQTTUpdateChannel:
     def __init__(self, channel, auto_update):
@@ -57,25 +59,24 @@ class MQTTUpdateChannel:
         await self.mqtt_client.subscribe(self.channel_topic)
 
     def msg_rcvd(self, topic, msg, retained):
-        if topic.decode() == self.channel_topic:
-            asyncio.create_task(self.pkg_list_msg_rcvd(msg))
-        else:
+        topic = topic.decode()
+        if topic == self.channel_topic:
+            asyncio.create_task(self.update_list_msg_rcvd(msg))
+        elif topic.startswith(PACKAGES_PREFIX):
             self.pkg_msg_rcvd(topic, msg)
+        else:
+            logging.warning("Skipping message from unknown topic")
 
-    async def pkg_list_msg_rcvd(self, msg):
+    async def update_list_msg_rcvd(self, msg):
         logging.info("Received update list from channel: %s", self.channel)
         for entry in ujson.loads(msg):
-            name = entry['name']
-            version = entry['version']
-            installed_pkg = wheel.pkg_info(name)
-            if installed_pkg and installed_pkg.version == version:
-                continue  # Skip unchanged packages
-
-            # Package needs installation/update
-            logging.info("Update available: %s %s -> %s",
-                         name, installed_pkg.version, version)
-            pkg_sha256 = entry['pkg_sha256']
-            self.waiting_pkgs.add(pkg_sha256)
+            update_type = entry['type']
+            if update_type == 'wheel':
+                self.check_wheel_update(entry)
+            elif update_type == 'src':
+                self.check_src_update(entry)
+            else:
+                logging.warning("Skipping unknown update type %s", update_type)
 
         if self.auto_update and self.update_available:
             logging.info("Performing auto update...")
@@ -84,21 +85,67 @@ class MQTTUpdateChannel:
             logging.info("No updates available")
             self.update_done.set()
 
+    def check_wheel_update(self, entry):
+        name = entry['name']
+        version = entry['version']
+        installed_pkg = wheel.pkg_info(name)
+        if installed_pkg and installed_pkg.version == version:
+            return  # Skip unchanged packages
+
+        # Package needs installation/update
+        logging.info("Update available: %s %s -> %s",
+                     name, installed_pkg.version, version)
+        self.waiting_pkgs.add('wheel/' + entry['pkg_sha256'])
+
+    def check_src_update(self, entry):
+        path = entry['path']
+        expected_checksum = entry['pkg_sha256'].encode()
+        with suppress(OSError):
+            with open(path, 'rb') as current_src_f:
+                checksum = hexlify(sha256(current_src_f.read()).digest())
+                if checksum == expected_checksum:
+                    return  # Skip unchanged source
+
+        # Source file needs installation/update
+        logging.info("Update available for source file: %s", path)
+        self.waiting_pkgs.add('src/' + path)
+
     def pkg_msg_rcvd(self, topic, msg):
-        pkg_sha256 = topic.decode().rsplit('/', 1)[-1]
+        pkg_id = topic[len(PACKAGES_PREFIX):]
         try:
-            self.waiting_pkgs.remove(pkg_sha256)
+            self.waiting_pkgs.remove(pkg_id)
         except KeyError:
             # Repeated message?
             return
         finally:
             pass
             # TODO Add unsubscribe to mqtt_as?
-            # await self.mqtt_client.unsubscribe(PACKAGES_PREFIX + pkg_sha256)
+            # await self.mqtt_client.unsubscribe(PACKAGES_PREFIX + pkg_id)
 
+        pkg_type, pkg_path = pkg_id.split('/', 1)
+        if pkg_type == 'src':
+            self.src_msg_rcvd(msg, pkg_path)
+        elif pkg_type == 'wheel':
+            self.wheel_msg_rcvd(msg)
+        else:
+            logging.warning("Skipping unknown pkg_type")
+            return
+
+        self.pkgs_installed = True
+        if not self.waiting_pkgs:
+            self.update_done.set()
+
+    def src_msg_rcvd(self, msg, pkg_path):
+        logging.info("Processing src pkg %s", pkg_path)
+
+        with open('/' + pkg_path, 'wb') as src_f:
+            src_f.write(msg)
+
+    def wheel_msg_rcvd(self, msg):
         wheel_file = WheelFile(BytesIO(msg))
+        logging.info("Processing wheel pkg %s", wheel_file.pkg_name)
+
         try:
-            logging.info("Processing pkg %s", wheel_file.pkg_name)
             wheel.install(wheel_file)
         except wheel.WheelExistingInstallation as ex_install_exc:
             logging.info("Force upgrading existing installation "
@@ -107,10 +154,6 @@ class MQTTUpdateChannel:
                              wheel_file.package.version))
             wheel.upgrade(ex_install_exc.existing_pkg, wheel_file)
 
-        self.pkgs_installed = True
-        if not self.waiting_pkgs:
-            self.update_done.set()
-
     async def perform_update(self):
         self.update_done.clear()
         if not self.update_available:
@@ -118,8 +161,8 @@ class MQTTUpdateChannel:
             return
 
         # Subscribe for all required updates
-        for pkg_sha256 in self.waiting_pkgs:
-            await self.mqtt_client.subscribe(PACKAGES_PREFIX + pkg_sha256)
+        for pkg_id in self.waiting_pkgs:
+            await self.mqtt_client.subscribe(PACKAGES_PREFIX + pkg_id)
 
         # Wait for updates to be processed
         await self.update_done.wait()
