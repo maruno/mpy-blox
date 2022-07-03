@@ -6,6 +6,8 @@ import usocket
 
 from logging import ERROR, INFO, Handler, getLogger
 
+from mpy_blox.contextlib import suppress
+
 LOG_USER = 1
 
 LOG_PRIORITIES = {
@@ -63,15 +65,13 @@ class SyslogHandler(Handler):
 
 
 def init_syslog(config):
-    try:
+    with suppress(KeyError):
         syslog_host = config['logging.syslog.hostname']
         try:
             syslog_level = int(config['logging.syslog.level'])
         except KeyError:
             syslog_level = ERROR
         getLogger().addHandler(SyslogHandler(syslog_host, syslog_level))
-    except KeyError:
-        pass
 
 
 def main():
