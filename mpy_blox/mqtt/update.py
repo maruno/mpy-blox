@@ -169,4 +169,4 @@ class MQTTUpdateChannel:
 
         if self.pkgs_installed:
             logging.info("Finished performing update")
-            # Reboot?
+            # Auto reboot based on setting?

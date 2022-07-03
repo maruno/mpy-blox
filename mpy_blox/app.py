@@ -41,6 +41,10 @@ async def register_updates(config):
         logging.info("Waiting for possible auto update...")
         await update_channel.update_done.wait()
 
+        if update_channel.pkgs_installed:
+            logging.info("Update on boot succesful, rebooting with new code")
+            reset()
+
 
 def main():
     config = init_config()
