@@ -5,6 +5,12 @@
     "device.suggested_area": "Livingroom",
     "mqtt": {
         "server": "192.168.1.1",
-        "username": "username"
-    }
+        "port": 31337,
+        "username": "username",
+        "ssl": false,
+        "ssl_params": {
+            "server_hostname": "mqtt.example.net"
+    },
+    "update.channel": "latest-dev",
+    "update.auto_update": true
 }
