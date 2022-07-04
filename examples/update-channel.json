@@ -1,0 +1,13 @@
+[
+    {
+        "name": "mpy-blox",
+        "version": "DEV",
+        "type": "wheel",
+        "pkg_sha256": "2b3497d3e905ffed8a35b557063ea9bd84061df60540e7dda0a90b8d5a108f65"
+    },
+    {
+        "path": "user_main.py",
+        "type": "src",
+        "pkg_sha256": "b6c588054af34398808dc149f246d9c53c1a8fbaddb41033bd299a146c127e39"
+    }
+]
