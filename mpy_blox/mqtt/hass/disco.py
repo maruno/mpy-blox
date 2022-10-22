@@ -51,16 +51,17 @@ class MQTTDiscoverable:
     @property
     def dev_registry(self):
         dev_reg = MQTTDiscoverable._dev_registry
-        entity_id = self.entity_id
         if not dev_reg:
             # Machine wide unique, cache
             unix_name = uname()
             dev_reg = {
-               'manufacturer': 'Mpy-BLOX',
-               'model': unix_name.machine,
-               'sw_version': '{} (Micropython {})'.format(
-                   pkg_info('mpy-blox').version,
-                   unix_name.version)
+                'name': config.get('hostname', uname().sysname),
+                'manufacturer': 'Mpy-BLOX',
+                'model': unix_name.machine,
+                'sw_version': '{} (Micropython {})'.format(
+                    pkg_info('mpy-blox').version,
+                    unix_name.version),
+                'identifiers': [self.device_id]
             }
 
             if 'device.suggested_area' in config:
@@ -68,17 +69,7 @@ class MQTTDiscoverable:
 
             MQTTDiscoverable._dev_registry = dev_reg
 
-        entity_reg = {
-            'name': self.name,
-            'identifiers': [entity_id]
-        }
-        entity_reg.update(dev_reg)
-
-        device_id = self.device_id
-        if device_id != entity_id:
-           entity_reg['via_device'] = device_id
-
-        return entity_reg
+        return dev_reg
 
     @property
     def topic_prefix(self):
