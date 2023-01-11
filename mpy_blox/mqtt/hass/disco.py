@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import ujson
+import json
 import uasyncio as asyncio
 from uos import uname
 from machine import unique_id
@@ -107,7 +107,7 @@ class MQTTDiscoverable:
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
         await self.mqtt_client.publish(
-            topic, ujson.dumps(disco_config).encode('utf-8'))
+            topic, json.dumps(disco_config).encode('utf-8'))
 
     async def disco_loop(self):
         while True:
@@ -129,7 +129,7 @@ class MQTTDiscoverableState(MQTTDiscoverable):
     async def publish_state(self):
         await self.mqtt_client.publish(
             '{}/state'.format(self.topic_prefix),
-            ujson.dumps(self.app_state),
+            json.dumps(self.app_state),
             qos=1
         )
 

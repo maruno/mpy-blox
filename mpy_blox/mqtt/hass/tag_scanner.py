@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import ujson
+import json
 
 
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
@@ -24,7 +24,7 @@ class MQTTTagScanner(MQTTDiscoverable):
         logging.info("Sending tag scanned event, tag ID %s", tag_id)
         await self.mqtt_client.publish(
             '{}/scanned'.format(self.topic_prefix),
-            ujson.dumps({
+            json.dumps({
                 'tag_id': str(tag_id)
             }),
             qos=1

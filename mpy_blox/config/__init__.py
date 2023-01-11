@@ -5,7 +5,7 @@
 import logging
 
 import uos
-from ujson import load
+from json import load
 
 from mpy_blox.config.secure_nvs import SecureNVS
 
