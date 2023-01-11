@@ -4,7 +4,7 @@
 
 from micropython import const
 
-import ujson
+import json
 from esp32 import NVS
 from machine import unique_id
 from ucryptolib import aes
@@ -70,7 +70,7 @@ class SecureNVS(dict):
             if os_e.args[0] == ESP_ERR_NVS_NOT_FOUND:
                 return False  # Empty
 
-        self.update(ujson.loads(self.unpad(cipher.decrypt(payload))))
+        self.update(json.loads(self.unpad(cipher.decrypt(payload))))
         return True
 
     def clear(self):
@@ -97,7 +97,7 @@ class SecureNVS(dict):
             iv = self.initialise()
 
         cipher = aes(self.key, MODE_CBC, iv)
-        payload = cipher.encrypt(self.pad(ujson.dumps(self).encode()))
+        payload = cipher.encrypt(self.pad(json.dumps(self).encode()))
         nvs.set_i32('payload_s', len(payload))
         nvs.set_blob('payload', payload)
         nvs.commit()

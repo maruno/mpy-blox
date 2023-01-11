@@ -4,7 +4,7 @@
 
 import logging
 import uasyncio as asyncio
-import ujson
+import json
 from hashlib import sha256
 from io import BytesIO
 from machine import unique_id
@@ -69,7 +69,7 @@ class MQTTUpdateChannel:
 
     async def update_list_msg_rcvd(self, msg):
         logging.info("Received update list from channel: %s", self.channel)
-        for entry in ujson.loads(msg):
+        for entry in json.loads(msg):
             update_type = entry['type']
             if update_type == 'wheel':
                 self.check_wheel_update(entry)

@@ -4,7 +4,7 @@
 
 import logging
 import uasyncio as asyncio
-import ujson
+import json
 from machine import Pin
 
 from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
@@ -30,7 +30,7 @@ class MQTTLight(MQTTMutableDiscoverable):
         }
 
     def msg_rcvd(self, topic, msg, retained):
-        msg = ujson.loads(msg)
+        msg = json.loads(msg)
         logging.info('Received message for %s: %s', topic.decode(), msg)
 
         if 'state' in msg:
