@@ -36,14 +36,10 @@ class MQTTLight(MQTTMutableDiscoverable):
         if 'state' in msg:
             self.pin.value(msg['state'] == 'ON')
             asyncio.create_task(self.publish_state())
-    
-    async def listen(self):
-        await self.mqtt_client.subscribe('{}/set'.format(self.topic_prefix))
-    
+
     async def connect(self):
         await super().connect()
         await self.publish_state()
-        await self.listen()
 
 
 async def async_main():
