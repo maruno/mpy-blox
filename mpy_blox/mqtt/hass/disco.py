@@ -114,9 +114,15 @@ class MQTTDiscoverable:
             await self.publish_config()
             await asyncio.sleep(DISCO_TIME)
 
+    async def listen(self):
+        await self.mqtt_client.subscribe('{}/set'.format(self.topic_prefix))
+
     async def connect(self):
         await self.mqtt_client.connect()
         self.disco_task = asyncio.create_task(self.disco_loop())
+
+        if self.is_mutable:
+            await self.listen()
 
 
 class MQTTDiscoverableState(MQTTDiscoverable):
