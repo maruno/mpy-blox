@@ -34,8 +34,7 @@ class MQTTTagScanner(MQTTDiscoverable):
 async def user_main():
     from uasyncio import sleep
     """Demo app for MQTT scanner."""
-    mqtt_tag_scanner = MQTTTagScanner("Demo MQTT scanner",
-                                      device_index='demo')
+    mqtt_tag_scanner = MQTTTagScanner("Demo MQTT scanner")
     await mqtt_tag_scanner.connect()
     
     await sleep(1)

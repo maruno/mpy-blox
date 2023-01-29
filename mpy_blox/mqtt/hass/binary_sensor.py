@@ -10,7 +10,7 @@ class MQTTBinarySensor(MQTTDiscoverableState):
 
     def __init__(self, name, var_name,
                  device_class=None,
-                 device_index=0,
+                 device_index=None,
                  discovery_prefix = 'homeassistant'):
         super().__init__(name,
                          device_index=device_index,

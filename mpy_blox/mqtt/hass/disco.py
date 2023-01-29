@@ -19,6 +19,7 @@ DISCO_TIME = const(30)
 
 class MQTTDiscoverable:
     _dev_registry = None
+    _device_index = 0
     component_type = None
     include_top_level_device_cfg = True
     has_state = False
@@ -28,7 +29,15 @@ class MQTTDiscoverable:
                  device_index=None, discovery_prefix = 'homeassistant'):
         self.name = name
         self.discovery_prefix = discovery_prefix
-        self.device_index = device_index
+
+        if device_index:
+            logging.warning("Passing device_index to %s is deprecated",
+                            self.__class__)
+            self.device_index = device_index
+        else:
+            self.device_index = MQTTDiscoverable._device_index
+            MQTTDiscoverable._device_index += 1
+
         self.mqtt_client = MQTTClient(
             client_id=self.entity_id,
             subs_cb=msg_cb,
