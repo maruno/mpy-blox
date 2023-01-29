@@ -9,6 +9,7 @@ from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
 
 class MQTTButton(MQTTDiscoverable):
     is_mutable = True
+    component_type = 'button'
     
     def __init__(self,
                  name,
