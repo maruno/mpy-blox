@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from uasyncio import create_task
+
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverableState
 
 
@@ -35,6 +37,7 @@ class MQTTSensor(MQTTDiscoverableState):
 
     def set_variable(self, var_value):
         self.var_value = var_value
+        create_task(self.publish_state())
 
     @property
     def app_state(self):
