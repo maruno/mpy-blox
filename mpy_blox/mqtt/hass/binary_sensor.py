@@ -11,11 +11,11 @@ class MQTTBinarySensor(MQTTDiscoverableState):
     component_type = 'binary_sensor'
 
     def __init__(self, name, var_name,
+                 mqtt_connection,
                  device_class=None,
-                 device_index=None,
                  discovery_prefix = 'homeassistant'):
         super().__init__(name,
-                         device_index=device_index,
+                         mqtt_connection,
                          discovery_prefix=discovery_prefix)
         self.var_name = var_name
         self.dev_cls = device_class
@@ -30,7 +30,7 @@ class MQTTBinarySensor(MQTTDiscoverableState):
 
         if self.dev_cls:
            disco_cfg['device_class'] = self.dev_cls
-        
+
         return disco_cfg
 
     def set_variable(self, var_value):

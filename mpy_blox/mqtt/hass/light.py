@@ -13,9 +13,10 @@ from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
 class MQTTLight(MQTTMutableDiscoverable):
     component_type = 'light'
 
-    def __init__(self, name, pin_id, discovery_prefix = 'homeassistant'):
+    def __init__(self, name, pin_id, mqtt_connection,
+                 discovery_prefix = 'homeassistant'):
         super().__init__(name,
-                         msg_cb=self.msg_rcvd,
+                         mqtt_connection,
                          discovery_prefix=discovery_prefix)
         self.pin = Pin(pin_id, Pin.OUT)
 
@@ -29,35 +30,14 @@ class MQTTLight(MQTTMutableDiscoverable):
             'state': 'ON' if self.pin.value() else 'OFF'
         }
 
-    def msg_rcvd(self, topic, msg, retained):
+    async def handle_msg(self, topic, msg, retained):
         msg = json.loads(msg)
-        logging.info('Received message for %s: %s', topic.decode(), msg)
+        logging.info('Received message for %s: %s', topic, msg)
 
         if 'state' in msg:
             self.pin.value(msg['state'] == 'ON')
             asyncio.create_task(self.publish_state())
 
-    async def connect(self):
-        await super().connect()
+    async def register(self):
+        await super().register()
         await self.publish_state()
-
-
-async def async_main():
-    # Setup closet lights on pin D2 (GPIO 4)
-    mqtt_light = MQTTLight('Closet lights', 4)
-    print("Topic prefix: {}".format(mqtt_light.topic_prefix))
-
-    loop = asyncio.get_event_loop()
-    await mqtt_light.connect()
-    loop.run_forever()
-
-
-def main():
-    """Demo app for MQTT device discovery."""
-    # Initialize logging
-    logging.basicConfig(format="{asctime} {message}", style="{")
-    asyncio.run(async_main())
-
-
-if __name__ == '__main__':
-    main()

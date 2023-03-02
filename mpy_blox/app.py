@@ -10,6 +10,7 @@ from sys import print_exception
 from uio import StringIO
 
 from mpy_blox.config import init_config
+from mpy_blox.mqtt import MQTTConnectionManager
 from mpy_blox.mqtt.update import MQTTUpdateChannel
 from mpy_blox.network import connect_wlan
 from mpy_blox.syslog import init_syslog
@@ -28,35 +29,41 @@ def start_network(config):
     return True
 
 
-async def register_updates(config):
+async def register_updates(config, mqtt_connection):
     channel = config.get('update.channel')
     if not channel:
-        logging.info("No update channel configured")
+        logging.info("MPy-BLOX: No update channel configured")
         return
 
     auto_update = config.get('update.auto_update')
-    update_channel = MQTTUpdateChannel(channel, auto_update)
-    await update_channel.connect()
+    update_channel = MQTTUpdateChannel(channel,
+                                       auto_update,
+                                       mqtt_connection)
+    await update_channel.register()
     if auto_update:
-        logging.info("Waiting for possible auto update...")
+        logging.info("MPy-BLOX: Waiting for possible auto update...")
         await update_channel.update_done.wait()
 
         if update_channel.pkgs_installed:
-            logging.info("Update on boot succesful, rebooting with new code")
+            logging.info(
+                "MPy-BLOX: Update on boot succesful, rebooting with new code")
             reset()
 
 
 def main():
     config = init_config()
-    
+
     network_available = start_network(config)
-    
+
     # We are booted, no more need for kernel messages
     osdebug(None)
     logging.info('Mpy-BLOX: Core succesfully booted')
-    
+
     if network_available:
-        asyncio.run(register_updates(config))
+        logging.info("MPy-BLOX: Network available, connecting MQTT")
+        mqtt_conn= MQTTConnectionManager.get_connection()
+        asyncio.run(mqtt_conn.connect())
+        asyncio.run(register_updates(config, mqtt_conn))
 
     try:
         from user_main import user_main

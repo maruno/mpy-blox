@@ -13,18 +13,19 @@ class MQTTButton(MQTTDiscoverable):
     def __init__(self,
                  name,
                  press_cb,
-                 device_index=None,
+                 mqtt_connection,
                  discovery_prefix='homeassistant'):
-        super().__init__(name, self.msg_rcvd, device_index, discovery_prefix)
+        super().__init__(name, mqtt_connection,
+                         discovery_prefix=discovery_prefix)
         self.press_cb = press_cb
-    
+
     @property
     def app_disco_config(self):
         return {
             'entity_category': 'config'
         }
 
-    def msg_rcvd(self, topic, msg, retained):
-        logging.info('Received message for %s: %s', topic.decode(), msg)
+    async def handle_msg(self, topic, msg, retained):
+        logging.info('Received message for %s: %s', topic, msg)
         if msg == b'PRESS':
-            self.press_cb()
+            await self.press_cb()
