@@ -7,15 +7,12 @@ import uasyncio as asyncio
 import json
 from hashlib import sha256
 from io import BytesIO
-from machine import unique_id
 from ubinascii import hexlify
-from uos import uname
 
-from mqtt_as import MQTTClient
 
 import mpy_blox.wheel as wheel
-from mpy_blox.config import config
 from mpy_blox.contextlib import suppress
+from mpy_blox.mqtt import MQTTConsumer
 from mpy_blox.wheel.wheelfile import WheelFile
 
 PREFIX = 'mpypi/'
@@ -23,26 +20,15 @@ CHANNEL_PREFIX = PREFIX + 'channels/'
 PACKAGES_PREFIX = PREFIX + 'packages/'
 
 
-class MQTTUpdateChannel:
-    def __init__(self, channel, auto_update):
+class MQTTUpdateChannel(MQTTConsumer):
+    def __init__(self, channel, auto_update, mqtt_connection):
+        super().__init__(mqtt_connection)
         self.channel = channel
         self.auto_update = auto_update
-
-        self.mqtt_client = MQTTClient(
-            client_id=self.device_id,
-            subs_cb=self.msg_rcvd,
-            password=config['mqtt.password'],
-            **config['mqtt'])
 
         self.waiting_pkgs = set()
         self.update_done = asyncio.Event()
         self.pkgs_installed = False 
-
-    @property
-    def device_id(self):
-        # TODO refactor where device_id lives?
-        return '{}-{}'.format(uname().sysname,
-                              hexlify(unique_id()).decode())
 
     @property
     def channel_topic(self):
@@ -52,22 +38,17 @@ class MQTTUpdateChannel:
     def update_available(self):
         return bool(self.waiting_pkgs)
 
-    async def connect(self):
-        await self.mqtt_client.connect()
-
+    async def register(self):
         logging.info("Registering with update channel: %s", self.channel)
-        await self.mqtt_client.subscribe(self.channel_topic)
+        await self.subscribe(self.channel_topic)
 
-    def msg_rcvd(self, topic, msg, retained):
-        topic = topic.decode()
+    async def handle_msg(self, topic, msg, retained):
         if topic == self.channel_topic:
-            asyncio.create_task(self.update_list_msg_rcvd(msg))
+            await self.handle_update_list_msg(msg)
         elif topic.startswith(PACKAGES_PREFIX):
-            self.pkg_msg_rcvd(topic, msg)
-        else:
-            logging.warning("Skipping message from unknown topic")
+            await self.handle_pkg_msg(topic, msg)
 
-    async def update_list_msg_rcvd(self, msg):
+    async def handle_update_list_msg(self, msg):
         logging.info("Received update list from channel: %s", self.channel)
         for entry in json.loads(msg):
             update_type = entry['type']
@@ -110,7 +91,7 @@ class MQTTUpdateChannel:
         logging.info("Update available for source file: %s", path)
         self.waiting_pkgs.add('src/' + path)
 
-    def pkg_msg_rcvd(self, topic, msg):
+    async def handle_pkg_msg(self, topic, msg):
         pkg_id = topic[len(PACKAGES_PREFIX):]
         try:
             self.waiting_pkgs.remove(pkg_id)
@@ -118,15 +99,13 @@ class MQTTUpdateChannel:
             # Repeated message?
             return
         finally:
-            pass
-            # TODO Add unsubscribe to mqtt_as?
-            # await self.mqtt_client.unsubscribe(PACKAGES_PREFIX + pkg_id)
+            await self.unsubscribe(topic)
 
         pkg_type, pkg_path = pkg_id.split('/', 1)
         if pkg_type == 'src':
-            self.src_msg_rcvd(msg, pkg_path)
+            self.handle_src_msg(msg, pkg_path)
         elif pkg_type == 'wheel':
-            self.wheel_msg_rcvd(msg)
+            self.handle_wheel_msg(msg)
         else:
             logging.warning("Skipping unknown pkg_type")
             return
@@ -135,13 +114,13 @@ class MQTTUpdateChannel:
         if not self.waiting_pkgs:
             self.update_done.set()
 
-    def src_msg_rcvd(self, msg, pkg_path):
+    def handle_src_msg(self, msg, pkg_path):
         logging.info("Processing src pkg %s", pkg_path)
 
         with open('/' + pkg_path, 'wb') as src_f:
             src_f.write(msg)
 
-    def wheel_msg_rcvd(self, msg):
+    def handle_wheel_msg(self, msg):
         wheel_file = WheelFile(BytesIO(msg))
         logging.info("Processing wheel pkg %s", wheel_file.pkg_name)
 
@@ -162,7 +141,7 @@ class MQTTUpdateChannel:
 
         # Subscribe for all required updates
         for pkg_id in self.waiting_pkgs:
-            await self.mqtt_client.subscribe(PACKAGES_PREFIX + pkg_id)
+            await self.subscribe(PACKAGES_PREFIX + pkg_id)
 
         # Wait for updates to be processed
         await self.update_done.wait()

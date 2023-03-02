@@ -9,15 +9,14 @@ from uos import uname
 from machine import unique_id
 from ubinascii import hexlify
 
-from mqtt_as import MQTTClient
-
 from mpy_blox.config import config
+from mpy_blox.mqtt import MQTTConsumer
 from mpy_blox.wheel import pkg_info
 
 DISCO_TIME = const(30)
 
 
-class MQTTDiscoverable:
+class MQTTDiscoverable(MQTTConsumer):
     _dev_registry = None
     _device_index = 0
     component_type = None
@@ -25,8 +24,10 @@ class MQTTDiscoverable:
     has_state = False
     is_mutable = False
 
-    def __init__(self, name, msg_cb=None,
+    def __init__(self, name, mqtt_connection,
                  device_index=None, discovery_prefix = 'homeassistant'):
+        super().__init__(mqtt_connection)
+
         self.name = name
         self.discovery_prefix = discovery_prefix
 
@@ -37,12 +38,6 @@ class MQTTDiscoverable:
         else:
             self.device_index = MQTTDiscoverable._device_index
             MQTTDiscoverable._device_index += 1
-
-        self.mqtt_client = MQTTClient(
-            client_id=self.entity_id,
-            subs_cb=msg_cb,
-            password=config['mqtt.password'],
-            **config['mqtt'])
 
     @property
     def device_id(self):
@@ -65,7 +60,7 @@ class MQTTDiscoverable:
             unix_name = uname()
             dev_reg = {
                 'name': config.get('hostname', uname().sysname),
-                'manufacturer': 'Mpy-BLOX',
+                'manufacturer': 'MPy-BLOX',
                 'model': unix_name.machine,
                 'sw_version': '{} (Micropython {})'.format(
                     pkg_info('mpy-blox').version,
@@ -115,7 +110,7 @@ class MQTTDiscoverable:
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
-        await self.mqtt_client.publish(
+        await self.mqtt_conn.publish(
             topic, json.dumps(disco_config).encode('utf-8'))
 
     async def disco_loop(self):
@@ -124,10 +119,9 @@ class MQTTDiscoverable:
             await asyncio.sleep(DISCO_TIME)
 
     async def listen(self):
-        await self.mqtt_client.subscribe('{}/set'.format(self.topic_prefix))
+        await self.subscribe('{}/set'.format(self.topic_prefix))
 
-    async def connect(self):
-        await self.mqtt_client.connect()
+    async def register(self):
         self.disco_task = asyncio.create_task(self.disco_loop())
 
         if self.is_mutable:
@@ -142,11 +136,11 @@ class MQTTDiscoverableState(MQTTDiscoverable):
         raise NotImplementedError()
 
     async def publish_state(self):
-        await self.mqtt_client.publish(
+        await self.mqtt_conn.publish(
             '{}/state'.format(self.topic_prefix),
             json.dumps(self.app_state),
-            qos=1
         )
+
 
 class MQTTMutableDiscoverable(MQTTDiscoverableState):
     is_mutable = True

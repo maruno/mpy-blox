@@ -5,7 +5,6 @@
 import logging
 import json
 
-
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
 
 
@@ -22,20 +21,10 @@ class MQTTTagScanner(MQTTDiscoverable):
 
     async def tag_scanned(self, tag_id):
         logging.info("Sending tag scanned event, tag ID %s", tag_id)
-        await self.mqtt_client.publish(
+        await self.mqtt_conn.publish(
             '{}/scanned'.format(self.topic_prefix),
             json.dumps({
                 'tag_id': str(tag_id)
             }),
             qos=1
         )
-
-
-async def user_main():
-    from uasyncio import sleep
-    """Demo app for MQTT scanner."""
-    mqtt_tag_scanner = MQTTTagScanner("Demo MQTT scanner")
-    await mqtt_tag_scanner.connect()
-    
-    await sleep(1)
-    await mqtt_tag_scanner.tag_scanned('TEST TAG')

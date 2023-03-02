@@ -11,10 +11,12 @@ class MQTTSensor(MQTTDiscoverableState):
     component_type = 'sensor'
 
     def __init__(self, name, unit, var_name,
+                 mqtt_connection,
                  device_class=None,
                  device_index=None,
                  discovery_prefix = 'homeassistant'):
         super().__init__(name,
+                         mqtt_connection,
                          device_index=device_index,
                          discovery_prefix=discovery_prefix)
         self.unit = unit
@@ -26,12 +28,12 @@ class MQTTSensor(MQTTDiscoverableState):
     @property
     def app_disco_config(self):
         disco_cfg = {
-           'unit_of_measurement': self.unit,
-           'value_template': "{{ value_json." + self.var_name + " }}"
+            'unit_of_measurement': self.unit,
+            'value_template': "{{ value_json." + self.var_name + " }}"
         }
 
         if self.dev_cls:
-           disco_cfg['device_class'] = self.dev_cls
+            disco_cfg['device_class'] = self.dev_cls
         
         return disco_cfg
 
