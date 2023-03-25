@@ -21,6 +21,7 @@ class MQTTSensor(MQTTDiscoverableState):
                          discovery_prefix=discovery_prefix)
         self.unit = unit
         self.var_name = var_name
+        self.var_value = None
         self.dev_cls = device_class
         self.state = None
         self.disco_task = None
