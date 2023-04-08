@@ -29,7 +29,7 @@ dist: clean
 	@echo Building micropython optimized wheel
 	@cd dist; wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
 	@echo "Byte-compiling for micropython"
-	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do mpy-cross $${py_file} && rm $${py_file}; done
+	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do mpy-cross -march=xtensawin $${py_file} && rm $${py_file}; done
 	@cd dist/$(WHEEL_VERSION)/$(WHEEL_VERSION).dist-info; echo "c\nTag: mpy6-bytecode-esp32\n.\nw\nq" | ed WHEEL > /dev/null
 	@cd dist; wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
 	@cd dist; rm -r $(WHEEL_VERSION)
