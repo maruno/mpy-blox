@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import micropython
+
 import uasyncio as asyncio
 import logging
 from esp import osdebug
@@ -52,6 +54,11 @@ async def register_updates(config, mqtt_connection):
 
 def main():
     config = init_config()
+
+    emergency_buf_len = int(config.get('emergency_buf_len', 100))
+    if emergency_buf_len:
+        logging.info("Allocating %s emergency buffer", emergency_buf_len)
+        micropython.alloc_emergency_exception_buf(emergency_buf_len)
 
     network_available = start_network(config)
 
