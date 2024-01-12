@@ -1,0 +1,79 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+from collections import OrderedDict
+
+
+MISSING = (0, 0)
+BLANK = (0, 0)
+charset_ndp = OrderedDict((
+    (' ', BLANK),
+    ('!', (0xB0, 0x5)),
+    ('?', (0x43, 0x88)),
+    ('"', (0x8, 0x80)),
+    ('%', (0xEE, 0x6C)),
+    ('(', (0x4, 0x10)),
+    (')', (0x10, 0x4)),
+    ('{', (0x29, 0x28)),
+    ('}', (0x4A, 0xA)),
+    ('*', (0x3E, 0x1C)),
+    ('+', (0x2A, 0x8)),
+    ('-', (0x22, 0)),
+    ('/', (0x4, 0x4)),
+    ('\\', (0x10, 0x10)),
+    ('0', (0xE7, 0xE7)),
+    ('1', (0x4, 0xC0)),
+    ('2', (0x63, 0xA3)),
+    ('3', (0x63, 0xE2)),
+    ('4', (0xA2, 0xC0)),
+    ('5', (0xE1, 0x32)),
+    ('6', (0xE3, 0x63)),
+    ('7', (0x45, 0x8)),
+    ('8', (0xE3, 0xE3)),
+    ('9', (0xE3, 0xE2)),
+    ('A', (0xE3, 0XC1)),
+    ('B', (0x4B, 0xEA)),
+    ('C', (0xC1, 0x23)),
+    ('D', (0x49, 0xEA)),
+    ('E', (0xE1, 0x23)),
+    ('F', (0xE1, 1)),
+    ('G', (0xC3, 0x63)),
+    ('H', (0xA2, 0xC1)),
+    ('I', (0x49, 0x2A)),
+    ('J', (0, 0xE3)),
+    ('K', (0xA4, 0x11)),
+    ('L', (0x80, 0x23)),
+    ('M', (0x94, 0xC1)),
+    ('N', (0x90, 0xD1)),
+    ('O', (0xC1, 0xE3)),
+    ('P', (0xE3, 0x81)),
+    ('Q', (0xC1, 0xF3)),
+    ('R', (0xE3, 0x91)),
+    ('S', (0xE3, 0x62)),
+    ('T', (0x49, 0x8)),
+    ('U', (0x80, 0xE3)),
+    ('V', (0x84, 0x5)),
+    ('W', (0x80, 0xD5)),
+    ('X', (0x14, 0x14)),
+    ('Y', (0xA2, 0xE2)),
+    ('Z', (0x45, 0x26)),
+    ('`', (0x10, 0)),
+    ('^', (0, 0x14)),
+    ('_', (0, 0x22))
+))
+
+
+def create_char(segments):
+    char_1 = 0
+    char_2 = 0
+    for segment in segments:
+        if 3 <= segment <= 9:
+            char_1 |= (1 << (segment - 3))
+        elif segment == 13:
+            char_1 |= (1 << 7)
+
+        if 14 <= segment <= 21:
+            char_2 |= (1 << (segment - 14))
+
+    return hex(char_1), hex(char_2)
