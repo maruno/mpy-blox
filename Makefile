@@ -73,6 +73,11 @@ deploy-app: provision
 	@$(MPREMOTE_CMD) cp settings.json :/settings.json
 	@$(MPREMOTE_CMD) cp main.py :/main.py
 
+.PHONY: deploy-user
+deploy-user:
+	@echo "Deploying $(DIST_VERSION) user_main to device"
+	@$(MPREMOTE_CMD) cp user_main.py :/user_main.py
+
 .PHONY: purge-app
 purge-app:
 	@echo "Purging device of main app!"
