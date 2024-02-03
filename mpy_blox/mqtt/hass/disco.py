@@ -130,15 +130,21 @@ class MQTTDiscoverable(MQTTConsumer):
 
 class MQTTDiscoverableState(MQTTDiscoverable):
     has_state = True
+    payload_is_json = True
 
     @property
     def app_state(self):
         raise NotImplementedError()
 
     async def publish_state(self):
+        if self.payload_is_json:
+            payload = json.dumps(self.app_state)
+        else:
+            payload = self.app_state
+
         await self.mqtt_conn.publish(
             '{}/state'.format(self.topic_prefix),
-            json.dumps(self.app_state),
+            payload
         )
 
 
