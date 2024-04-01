@@ -5,7 +5,7 @@
 import logging
 import usocket
 from machine import Pin
-from uos import dupterm
+from os import dupterm
 from utime import sleep
 
 

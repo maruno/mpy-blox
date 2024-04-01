@@ -3,11 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import uasyncio as asyncio
+import asyncio
 import json
 from hashlib import sha256
 from io import BytesIO
-from ubinascii import hexlify
+from binascii import hexlify
 
 
 import mpy_blox.wheel as wheel

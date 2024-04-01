@@ -2,7 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from ubinascii import a2b_base64, b2a_base64
+from binascii import a2b_base64, b2a_base64
 
 
 def urlsafe_b64decode(s):

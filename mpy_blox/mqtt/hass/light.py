@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import uasyncio as asyncio
+import asyncio
 import json
 from machine import Pin
 

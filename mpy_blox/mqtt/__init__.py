@@ -4,12 +4,10 @@
 
 import json
 import logging
-import uasyncio as asyncio
+import asyncio
 from machine import unique_id
 from os import uname
-from ubinascii import hexlify
-
-from mqtt_as import MQTTClient
+from binascii import hexlify
 
 from mpy_blox.config import config
 from mpy_blox.contextlib import suppress

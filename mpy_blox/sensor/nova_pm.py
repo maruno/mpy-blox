@@ -4,7 +4,7 @@
 
 import logging
 import struct
-from uasyncio import StreamReader, StreamWriter, wait_for
+from asyncio import StreamReader, StreamWriter, wait_for
 from machine import UART
 
 PROT_HEADER = const(0xAA)
@@ -95,5 +95,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    import uasyncio as asyncio
+    import asyncio
     asyncio.run(main())

@@ -9,7 +9,7 @@ from esp32 import NVS
 from machine import unique_id
 from ucryptolib import aes
 from uhashlib import sha256
-from uos import urandom
+from os import urandom
 
 ESP_ERR_NVS_NOT_FOUND = const(-4354)
 IV_SIZE = const(16)

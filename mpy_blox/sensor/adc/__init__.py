@@ -5,7 +5,7 @@
 import time
 import micropython
 
-from uasyncio import ThreadSafeFlag
+from asyncio import ThreadSafeFlag
 from machine import Timer
 
 from mpy_blox.buffer import PreAllocatedRingBuffer

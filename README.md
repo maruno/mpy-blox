@@ -40,6 +40,9 @@ The Makefile provides a simple interface to install and provision a device with 
 ### Requirements
 The buildsystem uses the default MicroPython tool *mpremote* to communicate with your board.
 
+Additional requirements:
+* Currently library 'zlib' is required to be installed or available as a frozen module.
+
 * **Beware of changing Micropython bytecode versions**, this project assumes version **mpy6**, introduced in MicroPython v1.19!
 * When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
 missing direct serial communication on WSL2. There may be limitations but seems to work well through /mnt.

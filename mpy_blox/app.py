@@ -4,7 +4,7 @@
 
 import micropython
 
-import uasyncio as asyncio
+import asyncio
 import logging
 from esp import osdebug
 from machine import reset

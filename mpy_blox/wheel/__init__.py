@@ -4,7 +4,7 @@
 
 import logging
 import re
-import uos
+import os
 
 from mpy_blox.os import makedirs
 from mpy_blox.wheel.info import WheelPackage
@@ -42,7 +42,7 @@ def list_installed(prefix=None):
     prefix = prefix or DEFAULT_PREFIX
     dist_info_re = DIST_INFO_RE
     try:
-        for subfolder in uos.listdir(prefix):
+        for subfolder in os.listdir(prefix):
             m = dist_info_re.match(subfolder)
             if m:
                 dist_info_path = prefix + m.group(1)
@@ -107,4 +107,4 @@ def upgrade(pkg, wheel_file, prefix=None):
 
         old_path = prefix + old_name
         logging.info("Removing old package file %s", old_path)
-        uos.remove(old_path)
+        os.remove(old_path)

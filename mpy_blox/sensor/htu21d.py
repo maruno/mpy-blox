@@ -3,8 +3,8 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from micropython import const
-from uasyncio import sleep_ms
-from ustruct import unpack
+from asyncio import sleep_ms
+from struct import unpack
 
 ADDRESS = const(0x40)
 DATAGRAM_SIZE = const(3)
@@ -51,5 +51,5 @@ async def main():
 
 
 if __name__ == '__main__':
-    import uasyncio as asyncio
+    import asyncio
     asyncio.run(main())

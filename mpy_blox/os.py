@@ -3,7 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 from errno import EEXIST
-import uos
+import os
 
 
 def makedirs(path):
@@ -14,7 +14,7 @@ def makedirs(path):
 
         folder_path = '/'.join(split_path[0:idx+1])
         try:
-            uos.mkdir(folder_path)
+            os.mkdir(folder_path)
         except OSError as os_e:
             if os_e.errno != EEXIST:
                 raise os_e

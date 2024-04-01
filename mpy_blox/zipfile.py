@@ -3,11 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import ustruct
+import struct
 from micropython import const
-from ubinascii import crc32
-from ucollections import OrderedDict
-from uzlib import decompress
+from binascii import crc32
+from collections import OrderedDict
+from zlib import decompress
 
 # Constants
 SEEK_SET = const(0)
@@ -20,12 +20,12 @@ COMP_DEF = const(8)
 # ZIP structures
 EOCD_SIG = b'PK\x05\x06'
 EOCD_STRUCT = '<4s4H2LH'
-EOCD_SIZE = ustruct.calcsize(EOCD_STRUCT)
+EOCD_SIZE = struct.calcsize(EOCD_STRUCT)
 CD_F_H_SIG = b'PK\x01\x02'
 CD_F_H_STRUCT =    '<4s4B4H3L5H2L'
-CD_F_H_SIZE = ustruct.calcsize(CD_F_H_STRUCT)
+CD_F_H_SIZE = struct.calcsize(CD_F_H_STRUCT)
 LOCAL_F_H_STRUCT = '<4s2B4HL2L2H'
-LOCAL_F_H_SIZE = ustruct.calcsize(LOCAL_F_H_STRUCT)
+LOCAL_F_H_SIZE = struct.calcsize(LOCAL_F_H_STRUCT)
 
 
 class BadZipFile(Exception):
@@ -49,7 +49,7 @@ class ZipInfo:
          self.comment_len,
          _,  # Disk number, we only support single part ZIPs
          _, _,  # File attributes, we don't care
-         self.offset) = ustruct.unpack(CD_F_H_STRUCT, cd_header_data)
+         self.offset) = struct.unpack(CD_F_H_STRUCT, cd_header_data)
         if sig != CD_F_H_SIG:
             raise BadZipFile(
                 "Central directory entry signature mismatch, ZIP corrupt?")
@@ -77,7 +77,7 @@ class ZipFile:
          central_dir_count,
          central_dir_size,
          central_dir_offset,
-         comment_len) = ustruct.unpack(EOCD_STRUCT,
+         comment_len) = struct.unpack(EOCD_STRUCT,
                                        file_obj.read(EOCD_SIZE))
 
         if magic_number != EOCD_SIG:

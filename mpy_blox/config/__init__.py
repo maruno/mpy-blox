@@ -4,7 +4,7 @@
 
 import logging
 
-import uos
+import os
 from json import load
 
 from mpy_blox.config.secure_nvs import SecureNVS
@@ -61,7 +61,7 @@ def ingest_provision_config():
     secure_nvs_store.commit()
 
     # Provision file needs to be removed
-    uos.remove(provision_path)
+    os.remove(provision_path)
 
 
 def init_config():
