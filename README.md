@@ -45,9 +45,6 @@ The buildsystem uses the default MicroPython tool *mpremote* to communicate with
 * When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
 missing direct serial communication on WSL2. There may be limitations but seems to work well through /mnt.
 * Micropython CLI-utilities, including *mpremote* and *mpy-cross*.
-* MQTT-as from maruno/micropython-mqtt, either as a frozen module or alternatively deployed as a bytecode-version:
-  * `git submodule update --init`
-  * `make deploy-mqtt-as`
 
 ### Device selection
 The Make variable `DEVICE` allows you to set the device to connect to, otherwise the first device found is used.

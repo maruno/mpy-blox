@@ -1,3 +1,0 @@
-[submodule "extern/micropython-mqtt"]
-	path = extern/micropython-mqtt
-	url = https://github.com/maruno/micropython-mqtt.git
