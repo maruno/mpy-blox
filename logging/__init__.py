@@ -76,8 +76,8 @@ class Logger:
         sys.print_exception(e, buf)
         self.log(ERROR, msg + "\n" + buf.getvalue(), *args)
 
-    def exception(self, msg, *args):
-        self.exc(sys.exc_info()[1], msg, *args)
+    def exception(self, msg, *args, exc_info=None):
+        self.exc(exc_info, msg, *args)
 
     def addHandler(self, hdlr):
         if self.handlers is None:
@@ -113,8 +113,8 @@ def error(msg, *args):
 def critical(msg, *args):
     getLogger(None).critical(msg, *args)
 
-def exception(msg, *args):
-    getLogger(None).exception(msg, *args)
+def exception(msg, *args, exc_info=None):
+    getLogger(None).exception(msg, *args, exc_info=exc_info)
 
 def basicConfig(level=INFO, filename=None, stream=None, format=None, style="%"):
     root.setLevel(level)
