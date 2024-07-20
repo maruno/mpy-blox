@@ -3,7 +3,6 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import json
 import asyncio as asyncio
 from os import uname
 from machine import unique_id
@@ -11,6 +10,7 @@ from binascii import hexlify
 
 from mpy_blox.config import config
 from mpy_blox.mqtt import MQTTConsumer
+from mpy_blox.mqtt.protocol.message import MQTTMessage
 from mpy_blox.wheel import pkg_info
 
 DISCO_TIME = const(30)
@@ -110,8 +110,7 @@ class MQTTDiscoverable(MQTTConsumer):
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
-        await self.mqtt_conn.publish(
-            topic, json.dumps(disco_config).encode('utf-8'))
+        await self.mqtt_conn.publish(MQTTMessage(topic, disco_config))
 
     async def disco_loop(self):
         while True:
@@ -130,22 +129,14 @@ class MQTTDiscoverable(MQTTConsumer):
 
 class MQTTDiscoverableState(MQTTDiscoverable):
     has_state = True
-    payload_is_json = True
 
     @property
     def app_state(self):
         raise NotImplementedError()
 
     async def publish_state(self):
-        if self.payload_is_json:
-            payload = json.dumps(self.app_state)
-        else:
-            payload = self.app_state
-
         await self.mqtt_conn.publish(
-            '{}/state'.format(self.topic_prefix),
-            payload
-        )
+            MQTTMessage('{}/state'.format(self.topic_prefix), self.app_state))
 
 
 class MQTTMutableDiscoverable(MQTTDiscoverableState):

@@ -26,7 +26,6 @@ class MQTTButton(MQTTDiscoverable):
             'entity_category': 'config'
         }
 
-    async def handle_msg(self, topic, msg, retained):
-        logging.info('Received message for %s: %s', topic, msg)
-        if msg == b'PRESS':
+    async def handle_msg(self, msg):
+        if msg.payload == b'PRESS':
             await self.press_cb()

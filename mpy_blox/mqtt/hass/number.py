@@ -52,10 +52,7 @@ class MQTTNumber(MQTTSensor):
 
         return disco_cfg
 
-    async def handle_msg(self, topic, msg, retained):
-        logging.info('Received message for %s: %s', topic, msg)
-
-        new_value = float(msg)
+    async def handle_msg(self, msg):
+        new_value = float(msg.payload)
         self.set_variable(new_value)
-
         self.set_cb(new_value)
