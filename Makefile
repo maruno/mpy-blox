@@ -36,16 +36,6 @@ dist: clean
 	@echo "Creating deployment hardlink"
 	@cd dist; ln $(WHEEL_VERSION)-mpy6-bytecode-esp32.whl mpy_blox-latest-mpy6-bytecode-esp32.whl
 
-.PHONY: dist-mqtt-as
-dist-mqtt-as:
-	@echo "Building mqtt-as submodule"
-	@mpy-cross -o dist/mqtt_as.mpy extern/micropython-mqtt/mqtt_as/mqtt_as.py
-
-.PHONY: deploy-mqtt-as
-deploy-mqtt-as: dist-mqtt-as
-	@echo "Deploying mqtt-as bytecode to device"
-	@$(MPREMOTE_CMD) cp dist/mqtt_as.mpy :/mqtt_as.mpy
-
 .PHONY: deploy-lib
 deploy-lib: dist
 	@echo "Deploying $(DIST_VERSION) lib to device"
