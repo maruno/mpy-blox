@@ -49,6 +49,8 @@ deploy-mqtt-as: dist-mqtt-as
 .PHONY: deploy-lib
 deploy-lib: dist
 	@echo "Deploying $(DIST_VERSION) lib to device"
+	-@$(MPREMOTE_CMD) mkdir /dist
+	@$(MPREMOTE_CMD) cp dist/mpy_blox-latest-mpy6-bytecode-esp32.whl :/dist/mpy_blox-latest-mpy6-bytecode-esp32.whl
 	@$(MPREMOTE_CMD) mount . run scripts/mount_enforcer.py run scripts/deploy_wheel.py
 	@echo "Deployment succeeded, resetting device"
 	@$(MPREMOTE_CMD) reset

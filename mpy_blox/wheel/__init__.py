@@ -108,3 +108,8 @@ def upgrade(pkg, wheel_file, prefix=None):
         old_path = prefix + old_name
         logging.info("Removing old package file %s", old_path)
         os.remove(old_path)
+    
+    if wheel_file.package.version != pkg.version:
+        # Remove dist-folder after version upgrade
+        os.rmdir(prefix + "{}-.dist-info".format(wheel_file.pkg_name,
+                                                 pkg.version))
