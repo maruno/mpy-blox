@@ -30,12 +30,10 @@ class MQTTLight(MQTTMutableDiscoverable):
             'state': 'ON' if self.pin.value() else 'OFF'
         }
 
-    async def handle_msg(self, topic, msg, retained):
-        msg = json.loads(msg)
-        logging.info('Received message for %s: %s', topic, msg)
-
-        if 'state' in msg:
-            self.pin.value(msg['state'] == 'ON')
+    async def handle_msg(self, msg):
+        cmd = json.loads(msg.payload)
+        if 'state' in cmd:
+            self.pin.value(cmd['state'] == 'ON')
             asyncio.create_task(self.publish_state())
 
     async def register(self):

@@ -10,14 +10,15 @@ from os import uname
 from binascii import hexlify
 
 from mpy_blox.config import config
-from mpy_blox.contextlib import suppress
+from mpy_blox.mqtt.protocol.client import MQTT5Client
+from mpy_blox.mqtt.protocol.message import MQTTMessage
 
 
 class MQTTConsumer:
     def __init__(self, mqtt_connection) -> None:
         self.mqtt_conn = mqtt_connection
 
-    async def handle_msg(self, topic, msg, retained):
+    async def handle_msg(self, msg: MQTTMessage):
         raise NotImplementedError
 
     async def subscribe(self, topic):
@@ -40,11 +41,9 @@ class MQTTConnectionManager:
 
         mqtt_cfg = {}
         mqtt_cfg.update(config[config_key])
-        queue_len = mqtt_cfg.pop('queue_len', 5)
 
-        self.mqtt_client = MQTTClient(
+        self.mqtt_client = MQTT5Client(
             client_id=self.client_id,
-            queue_len=queue_len,
             password=config[config_key + '.password'],
             **config[config_key])
 
@@ -83,31 +82,23 @@ class MQTTConnectionManager:
         if not topic_consumers:
             await self.mqtt_client.unsubscribe(topic)
 
-    async def publish(self, topic, message, qos=0):
-        if isinstance(message, str):
-            message = message.encode()
-        elif not isinstance(message, bytes):
-            message = json.dumps(message).encode()
-
-        await self.mqtt_client.publish(topic, message, qos=qos)
+    async def publish(self, msg: MQTTMessage):
+        await self.mqtt_client.publish(msg)
 
     async def receive_loop(self):
-        async for topic, msg, retained in self.mqtt_client.queue:
-            topic = topic.decode()
+        msg: MQTTMessage
+        async for msg in self.mqtt_client.consume():
+            topic = msg.topic
             topic_consumers = self.consumers_by_topic.get(topic, set())
             if not topic_consumers:
+                # TODO Rebuild to topic filter
                 logging.warning("%s Skipping message from unknown topic",
                                 self, self.name)
                 continue
-            
-            logging.info("%s Received %s bytes message for topic %s",
-                         self, len(msg), topic)
-            with suppress(ValueError):
-                # Transparently load JSON if possible
-                msg = json.loads(msg)
 
             # Notify all subscribed consumers of message
-            await asyncio.gather(*[consumer.handle_msg(topic, msg, retained)
+            logging.info("Processing message %s", msg)
+            await asyncio.gather(*[consumer.handle_msg(msg)
                                    for consumer in topic_consumers])
 
     async def connect(self):

@@ -4,12 +4,12 @@
 
 import logging
 import asyncio
-import json
 from hashlib import sha256
 from io import BytesIO
 from binascii import hexlify
 
 
+from mpy_blox.mqtt.protocol.message import MQTTMessage
 import mpy_blox.wheel as wheel
 from mpy_blox.contextlib import suppress
 from mpy_blox.mqtt import MQTTConsumer
@@ -42,15 +42,16 @@ class MQTTUpdateChannel(MQTTConsumer):
         logging.info("Registering with update channel: %s", self.channel)
         await self.subscribe(self.channel_topic)
 
-    async def handle_msg(self, topic, msg, retained):
+    async def handle_msg(self, msg):
+        topic = msg.topic
         if topic == self.channel_topic:
             await self.handle_update_list_msg(msg)
         elif topic.startswith(PACKAGES_PREFIX):
-            await self.handle_pkg_msg(topic, msg)
+            await self.handle_pkg_msg(msg)
 
     async def handle_update_list_msg(self, msg):
-        logging.info("Received update list from channel: %s", self.channel)
-        for entry in json.loads(msg):
+        logging.info("Received update list from channel: %s", msg.topic)
+        for entry in msg.payload:
             update_type = entry['type']
             if update_type == 'wheel':
                 self.check_wheel_update(entry)
@@ -91,7 +92,8 @@ class MQTTUpdateChannel(MQTTConsumer):
         logging.info("Update available for source file: %s", path)
         self.waiting_pkgs.add('src/' + path)
 
-    async def handle_pkg_msg(self, topic, msg):
+    async def handle_pkg_msg(self, msg):
+        topic = msg.topic
         pkg_id = topic[len(PACKAGES_PREFIX):]
         try:
             self.waiting_pkgs.remove(pkg_id)
@@ -99,6 +101,7 @@ class MQTTUpdateChannel(MQTTConsumer):
             # Repeated message?
             return
         finally:
+            # TODO Topic filter and no subscribe/unsubscribe all the time?
             await self.unsubscribe(topic)
 
         pkg_type, pkg_path = pkg_id.split('/', 1)
@@ -141,6 +144,7 @@ class MQTTUpdateChannel(MQTTConsumer):
 
         # Subscribe for all required updates
         for pkg_id in self.waiting_pkgs:
+            # TODO Topic filter and no subscribe/unsubscribe all the time?
             await self.subscribe(PACKAGES_PREFIX + pkg_id)
 
         # Wait for updates to be processed

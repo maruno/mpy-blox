@@ -29,10 +29,8 @@ class MQTTSwitch(MQTTMutableDiscoverable):
     def app_state(self):
         return 'ON' if self.pin.value() else 'OFF'
 
-    async def handle_msg(self, topic, msg, retained):
-        logging.info('Received message for %s: %s', topic, msg)
-
-        self.pin.value(msg.decode() == 'ON')
+    async def handle_msg(self, msg):
+        self.pin.value(msg.payload == b'ON')
         asyncio.create_task(self.publish_state())
 
     async def register(self):

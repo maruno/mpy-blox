@@ -3,9 +3,9 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import logging
-import json
 
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
+from mpy_blox.mqtt.protocol.message import MQTTMessage
 
 
 class MQTTTagScanner(MQTTDiscoverable):
@@ -22,9 +22,10 @@ class MQTTTagScanner(MQTTDiscoverable):
     async def tag_scanned(self, tag_id):
         logging.info("Sending tag scanned event, tag ID %s", tag_id)
         await self.mqtt_conn.publish(
-            '{}/scanned'.format(self.topic_prefix),
-            json.dumps({
-                'tag_id': str(tag_id)
-            }),
-            qos=1
+            MQTTMessage(
+                '{}/scanned'.format(self.topic_prefix),
+                {
+                    'tag_id': str(tag_id)
+                }
+            )
         )
