@@ -90,7 +90,8 @@ class MQTTMessage:
 
         # The remainder is the payload
         variable_header_len = (prop_start
-                               + calc_VBI_size(properties_length))
+                               + calc_VBI_size(properties_length)
+                               + properties_length)
         instance.raw_payload = packed_message[variable_header_len:]
         return instance
 
