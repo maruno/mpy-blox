@@ -12,7 +12,6 @@ from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
 
 class MQTTSwitch(MQTTMutableDiscoverable):
     component_type = 'switch'
-    payload_is_json = False
 
     def __init__(self, name, pin_id, mqtt_connection,
                  discovery_prefix = 'homeassistant'):

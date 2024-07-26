@@ -294,6 +294,9 @@ class MQTT5Client:
 
         del self.packet_futures[packet_id]
 
+    async def unsubscribe(self, topic_filter):
+        logging.warning("Unsubscribe not implemented yet")
+
     async def publish(self, msg: MQTTMessage):
         _, writer = self.connection
 

@@ -9,7 +9,7 @@ from mpy_blox.mqtt.protocol import (
     decode_string,
     encode_control_packet_fixed_header,
     encode_string)
-from mpy_blox.mqtt.protocol.const import PUBLISH, PUBLISH_RETAIN_FLAG
+from mpy_blox.mqtt.protocol.const import PUBLISH
 
 
 @micropython.viper
