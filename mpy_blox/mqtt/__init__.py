@@ -14,20 +14,6 @@ from mpy_blox.mqtt.protocol.client import MQTT5Client
 from mpy_blox.mqtt.protocol.message import MQTTMessage
 
 
-class MQTTConsumer:
-    def __init__(self, mqtt_connection) -> None:
-        self.mqtt_conn = mqtt_connection
-
-    async def handle_msg(self, msg: MQTTMessage):
-        raise NotImplementedError
-
-    async def subscribe(self, topic):
-        await self.mqtt_conn.subscribe(topic, self)
-
-    async def unsubscribe(self, topic):
-        await self.mqtt_conn.unsubscribe(topic, self)
-
-
 class MQTTConnectionManager:
     _connections = {}
     def __init__(self, name):
@@ -98,8 +84,18 @@ class MQTTConnectionManager:
 
             # Notify all subscribed consumers of message
             logging.info("Processing message %s", msg)
-            await asyncio.gather(*[consumer.handle_msg(msg)
-                                   for consumer in topic_consumers])
+            async def handle_message(msg, consumer):
+                try:
+                    await consumer.handle_msg(msg)
+                except Exception as e:
+                    logging.exception(
+                        "Processing MQTT message %s to consumer %s failed",
+                        msg, consumer, exc_info=e)
+
+            await asyncio.gather(*[handle_message(msg, consumer)
+                                   for consumer in topic_consumers],
+                                 return_exceptions=True)
+
 
     async def connect(self):
         await self.mqtt_client.connect()
@@ -115,3 +111,17 @@ class MQTTConnectionManager:
         await self.mqtt_client.disconnect()
         receive_task.cancel()
         self.receive_task = None
+
+
+class MQTTConsumer:
+    def __init__(self, mqtt_connection: MQTTConnectionManager) -> None:
+        self.mqtt_conn = mqtt_connection
+
+    async def handle_msg(self, msg: MQTTMessage):
+        raise NotImplementedError
+
+    async def subscribe(self, topic):
+        await self.mqtt_conn.subscribe(topic, self)
+
+    async def unsubscribe(self, topic):
+        await self.mqtt_conn.unsubscribe(topic, self)
