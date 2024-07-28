@@ -7,17 +7,20 @@ import asyncio
 from hashlib import sha256
 from io import BytesIO
 from binascii import hexlify
+from machine import reset
+from os import uname
 
 
-from mpy_blox.mqtt.protocol.message import MQTTMessage
 import mpy_blox.wheel as wheel
 from mpy_blox.contextlib import suppress
 from mpy_blox.mqtt import MQTTConsumer
+from mpy_blox.mqtt.protocol.message import MQTTMessage
 from mpy_blox.wheel.wheelfile import WheelFile
 
 PREFIX = 'mpypi/'
 CHANNEL_PREFIX = PREFIX + 'channels/'
 PACKAGES_PREFIX = PREFIX + 'packages/'
+PRIVATE_PREFIX = PREFIX + 'nodes/'
 
 
 class MQTTUpdateChannel(MQTTConsumer):
@@ -35,22 +38,59 @@ class MQTTUpdateChannel(MQTTConsumer):
         return CHANNEL_PREFIX + self.channel
 
     @property
+    def private_base(self):
+        return PRIVATE_PREFIX + self.mqtt_conn.client_id + '/'
+
+    @property
+    def info_topic(self):
+        return self.private_base + 'info'
+
+    @property
+    def cmd_topic(self):
+        return self.private_base + 'cmd'
+
+    @property
     def update_available(self):
         return bool(self.waiting_pkgs)
 
     async def register(self):
-        logging.info("Registering with update channel: %s", self.channel)
+        mqtt_conn = self.mqtt_conn
+        logging.info("Registering as node %s with update channel: %s",
+                     mqtt_conn.client_id, self.channel)
+
+        unix_name = uname()
+        await self.mqtt_conn.publish(
+            MQTTMessage(self.info_topic,
+                        {
+                            'uname': {
+                                'sysname': unix_name.sysname,
+                                'machine': unix_name.machine,
+                                'version': unix_name.version
+                            },
+                            'versions': {
+                                wheel.name: wheel.version
+                                for wheel in wheel.list_installed()
+                            }
+                        },
+                        retain=True)
+        )
+
+        # Subscribe to our private cmd topic + channel topic for updates
+        await self.subscribe(self.cmd_topic)
         await self.subscribe(self.channel_topic)
 
     async def handle_msg(self, msg):
         topic = msg.topic
-        if topic == self.channel_topic:
-            await self.handle_update_list_msg(msg)
+        if topic in (self.channel_topic, self.cmd_topic):
+            is_commanded = topic == self.cmd_topic
+            asyncio.create_task(
+                self.handle_update_list_msg(msg, is_commanded))
         elif topic.startswith(PACKAGES_PREFIX):
             await self.handle_pkg_msg(msg)
 
-    async def handle_update_list_msg(self, msg):
+    async def handle_update_list_msg(self, msg, is_commanded):
         logging.info("Received update list from channel: %s", msg.topic)
+        self.waiting_pkgs.clear()
         for entry in msg.payload:
             update_type = entry['type']
             if update_type == 'wheel':
@@ -60,11 +100,18 @@ class MQTTUpdateChannel(MQTTConsumer):
             else:
                 logging.warning("Skipping unknown update type %s", update_type)
 
-        if self.auto_update and self.update_available:
-            logging.info("Performing auto update...")
-            await self.perform_update()
+        if self.update_available:
+            auto_update = self.auto_update
+            if is_commanded:
+                logging.info("Commanded to perform upgrade")
+            elif auto_update:
+                logging.info("Performing auto update...")
+
+            if is_commanded or auto_update:
+                await self.perform_update()
+            else:
+                logging.info("Updates are available, but won't act")
         else:
-            logging.info("No updates available")
             self.update_done.set()
 
     def check_wheel_update(self, entry):
@@ -121,10 +168,10 @@ class MQTTUpdateChannel(MQTTConsumer):
         logging.info("Processing src pkg %s", pkg_path)
 
         with open('/' + pkg_path, 'wb') as src_f:
-            src_f.write(msg)
+            src_f.write(msg.payload)
 
     def handle_wheel_msg(self, msg):
-        wheel_file = WheelFile(BytesIO(msg))
+        wheel_file = WheelFile(BytesIO(msg.payload))
         logging.info("Processing wheel pkg %s", wheel_file.pkg_name)
 
         try:
@@ -151,5 +198,5 @@ class MQTTUpdateChannel(MQTTConsumer):
         await self.update_done.wait()
 
         if self.pkgs_installed:
-            logging.info("Finished performing update")
-            # Auto reboot based on setting?
+            logging.info("Finished performing update, rebooting...")
+            reset()
