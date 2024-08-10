@@ -34,6 +34,16 @@ The update files themselves need to be send as binaries to `mypypi/packages/{pkg
 * `pkg_sha256` for type `wheel`.
 * `path` for type `src`.
 
+## MQTT OTA update script
+To command a remote device to update with the latest version using MQTT a script is provided:
+
+`python scripts/publish_ota_update.py --device-ids esp32-840d8ed29760 --dev`
+
+The flag `--dev` adds a dev-flag to the version number.
+
+This is currently the fastest way of updating, even during development since serial can be quite
+slow. However, serial is more reliable especially in the case the nework or MQTT is broken... ;)
+
 ## Makefile instructions
 The Makefile provides a simple interface to install and provision a device with the Mpy-BLOX framework.
 
@@ -45,6 +55,7 @@ The buildsystem uses the default MicroPython tool *mpremote* to communicate with
 * When using **WSL2 on Windows**: the win32 version of *mpremote* is required, because of 
 missing direct serial communication on WSL2. There may be limitations but seems to work well through /mnt.
 * Micropython CLI-utilities, including *mpremote* and *mpy-cross*.
+* For MQTT OTA updates: mqttx-cli 
 
 ### Device selection
 The Make variable `DEVICE` allows you to set the device to connect to, otherwise the first device found is used.
