@@ -111,5 +111,5 @@ def upgrade(pkg, wheel_file, prefix=None):
     
     if wheel_file.package.version != pkg.version:
         # Remove dist-folder after version upgrade
-        os.rmdir(prefix + "{}-.dist-info".format(wheel_file.pkg_name,
-                                                 pkg.version))
+        os.rmdir(prefix + "{}-{}.dist-info".format(wheel_file.pkg_name,
+                                                   pkg.version))
