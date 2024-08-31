@@ -16,6 +16,7 @@ from mpy_blox.contextlib import suppress
 from mpy_blox.mqtt import MQTTConsumer
 from mpy_blox.mqtt.protocol.message import MQTTMessage
 from mpy_blox.wheel.wheelfile import WheelFile
+from mpy_blox.util import rewrite_file
 
 PREFIX = 'mpypi/'
 CHANNEL_PREFIX = PREFIX + 'channels/'
@@ -168,11 +169,7 @@ class MQTTUpdateChannel(MQTTConsumer):
         pkg_path = '/' + pkg_id.rsplit('/', 1)[0]
         logging.info("Processing src pkg %s", pkg_path)
 
-        # Temporary till truncate supported: https://github.com/micropython/micropython/issues/4775
-        remove(pkg_path)
-        with open(pkg_path, 'wb') as src_f:
-            src_f.write(msg.raw_payload)
-            # src_f.truncate() After https://github.com/micropython/micropython/issues/4775
+        rewrite_file(pkg_path, msg.raw_payload)
 
     def handle_wheel_msg(self, msg):
         wheel_file = WheelFile(BytesIO(msg.raw_payload))

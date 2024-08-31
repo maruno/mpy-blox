@@ -8,6 +8,7 @@ import os
 
 from mpy_blox.os import makedirs
 from mpy_blox.wheel.info import WheelPackage
+from mpy_blox.util import rewrite_file
 
 DIST_INFO_RE = re.compile(
     r"^(((.+?)-(.+?))(-(P\d[^-]*))?.dist-info/?)(RECORD$)?")
@@ -96,8 +97,7 @@ def upgrade(pkg, wheel_file, prefix=None):
             makedirs(folder)
 
         logging.info("%s -> %s", name, output_path)
-        with open(output_path, 'wb') as output_f:
-            output_f.write(wheel_file.read(new_record_entry))
+        rewrite_file(output_path, wheel_file.read(new_record_entry))
 
         processed_names.append(name)
 
