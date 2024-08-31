@@ -30,9 +30,9 @@ Two types of updates are supported:
 In the examples a sample of the JSON payload on the update channel is provided in `update-channel.json`.
 The framework expects this in topic `mpypi/channels/{update.channel}` where `update.channel` is sourced from settings.
 
-The update files themselves need to be send as binaries to `mypypi/packages/{pkg_id}` where `pkg_id` is one of:
-* `pkg_sha256` for type `wheel`.
-* `path` for type `src`.
+The update files themselves need to be send as binaries to topic:
+`mypypi/packages/{pkg_type}/{pkg_path?}/{pkg_sha256}` where `pkg_type` is either `wheel` or `src`.
+For type `src` add the `pkg_path`.
 
 ## MQTT OTA update script
 To command a remote device to update with the latest version using MQTT a script is provided:
@@ -40,6 +40,9 @@ To command a remote device to update with the latest version using MQTT a script
 `python scripts/publish_ota_update.py --device-ids esp32-840d8ed29760 --dev`
 
 The flag `--dev` adds a dev-flag to the version number.
+
+You can update additional src files using `--extra-src-files SRC_FILE`, ideal for things like
+the device specific `settings.json` and `user_main.py`
 
 This is currently the fastest way of updating, even during development since serial can be quite
 slow. However, serial is more reliable especially in the case the nework or MQTT is broken... ;)
