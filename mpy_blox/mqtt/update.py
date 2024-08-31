@@ -8,7 +8,7 @@ from hashlib import sha256
 from io import BytesIO
 from binascii import hexlify
 from machine import reset
-from os import uname
+from os import remove, uname
 
 
 import mpy_blox.wheel as wheel
@@ -128,16 +128,16 @@ class MQTTUpdateChannel(MQTTConsumer):
 
     def check_src_update(self, entry):
         path = entry['path']
-        expected_checksum = entry['pkg_sha256'].encode()
+        pkg_sha256 = entry['pkg_sha256']
         with suppress(OSError):
             with open(path, 'rb') as current_src_f:
                 checksum = hexlify(sha256(current_src_f.read()).digest())
-                if checksum == expected_checksum:
+                if checksum == pkg_sha256.encode():
                     return  # Skip unchanged source
 
         # Source file needs installation/update
         logging.info("Update available for source file: %s", path)
-        self.waiting_pkgs.add('src/' + path)
+        self.waiting_pkgs.add('src/' + path + '/' + pkg_sha256)
 
     async def handle_pkg_msg(self, msg):
         topic = msg.topic
@@ -151,9 +151,9 @@ class MQTTUpdateChannel(MQTTConsumer):
             # TODO Topic filter and no subscribe/unsubscribe all the time?
             await self.unsubscribe(topic)
 
-        pkg_type, pkg_path = pkg_id.split('/', 1)
+        pkg_type, pkg_id = pkg_id.split('/', 1)
         if pkg_type == 'src':
-            self.handle_src_msg(msg, pkg_path)
+            self.handle_src_msg(msg, pkg_id)
         elif pkg_type == 'wheel':
             self.handle_wheel_msg(msg)
         else:
@@ -164,14 +164,18 @@ class MQTTUpdateChannel(MQTTConsumer):
         if not self.waiting_pkgs:
             self.update_done.set()
 
-    def handle_src_msg(self, msg, pkg_path):
+    def handle_src_msg(self, msg, pkg_id):
+        pkg_path = '/' + pkg_id.rsplit('/', 1)[0]
         logging.info("Processing src pkg %s", pkg_path)
 
-        with open('/' + pkg_path, 'wb') as src_f:
-            src_f.write(msg.payload)
+        # Temporary till truncate supported: https://github.com/micropython/micropython/issues/4775
+        remove(pkg_path)
+        with open(pkg_path, 'wb') as src_f:
+            src_f.write(msg.raw_payload)
+            # src_f.truncate() After https://github.com/micropython/micropython/issues/4775
 
     def handle_wheel_msg(self, msg):
-        wheel_file = WheelFile(BytesIO(msg.payload))
+        wheel_file = WheelFile(BytesIO(msg.raw_payload))
         logging.info("Processing wheel pkg %s", wheel_file.pkg_name)
 
         try:
