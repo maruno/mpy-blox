@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mpy-blox"
-version = "0.4.1"
+version = "0.4.1.1"
 description = "MicroPython building blox"
 authors = ["Michel Bouwmans <m.bouwmans@ep-games.eu>"]
 license = "MPL-2.0"
