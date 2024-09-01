@@ -15,7 +15,7 @@ from mpy_blox.wheel import pkg_info
 
 
 logger = getLogger('mqtt_hass')
-DISCO_TIME = const(30)
+DISCO_TIME = const(3600)
 
 
 class MQTTDiscoverable(MQTTConsumer):
@@ -112,7 +112,8 @@ class MQTTDiscoverable(MQTTConsumer):
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)
-        await self.mqtt_conn.publish(MQTTMessage(topic, disco_config))
+        await self.mqtt_conn.publish(MQTTMessage(topic, disco_config,
+                                                 retain=True))
 
     async def disco_loop(self):
         while True:
