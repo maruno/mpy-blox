@@ -103,7 +103,7 @@ class MQTTDiscoverable(MQTTConsumer):
 
     @property
     def app_disco_config(self):
-        raise NotImplementedError()
+        return {}
 
     async def publish_config(self):
         topic = '{}/config'.format(self.topic_prefix)
