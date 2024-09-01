@@ -28,7 +28,7 @@ class SN74HC595:
                        firstbit=SPI.MSB)
 
     def write(self, value):
-        if not isinstance(value, bytes):
+        if not isinstance(value, (bytes, bytearray)):
             raise ValueError("Value should be of type bytes")
 
         self.spi.write(value)
