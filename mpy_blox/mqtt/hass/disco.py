@@ -133,6 +133,10 @@ class MQTTDiscoverable(MQTTConsumer):
 class MQTTDiscoverableState(MQTTDiscoverable):
     has_state = True
 
+    async def register(self):
+        await (super().register())
+        await self.publish_state()
+
     @property
     def app_state(self):
         raise NotImplementedError()
