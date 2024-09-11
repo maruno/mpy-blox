@@ -9,6 +9,7 @@ import subprocess
 from hashlib import sha256
 from pathlib import Path
 from tomllib import load
+from typing import cast
 
 PACKAGES_PREFIX = 'mpypi/packages/'
 
@@ -19,6 +20,9 @@ parser = argparse.ArgumentParser(
     description="Publish OTA update to remote device via MQTT")
 parser.add_argument('--device-ids', required=True, nargs='+',
                     help="List of remote device IDs")
+parser.add_argument('--version', required=False, nargs='?',
+                    default='latest', type=str,
+                    help="Wheel version to deploy")
 parser.add_argument('--extra-src-files', required=False, nargs='*',
                     default=(), type=Path,
                     help="List of extra source files")
@@ -26,14 +30,17 @@ parser.add_argument('--dev', action='store_true',
                     help="Include 'dev' in the version string")
 args = parser.parse_args()
 
-with open('pyproject.toml', 'rb') as pyproject_f:
-    version = load(pyproject_f)['tool']['poetry']['version']
+version = cast(str, args.version)
+if version == 'latest':
+    # Grab version from pyproject and append dev when developing
+    with open('pyproject.toml', 'rb') as pyproject_f:
+        version = load(pyproject_f)['tool']['poetry']['version']
 
-if args.dev:
-        version += 'dev'
+    if args.dev:
+            version += 'dev'
 
 # Calculate the SHA256 checksum of the package
-pkg_path = Path('./dist/mpy_blox-latest-mpy6-bytecode-esp32.whl')
+pkg_path = Path(f'./dist/mpy_blox-{args.version}-mpy6-bytecode-esp32.whl')
 pkg_sha256 = sha256(pkg_path.read_bytes()).hexdigest()
 files_to_publish = [(f'wheel/{pkg_sha256}', pkg_path)]
 
