@@ -12,10 +12,10 @@ from sys import print_exception
 from uio import StringIO
 
 from mpy_blox.config import init_config
+from mpy_blox.log_handlers import blox_log_config
 from mpy_blox.mqtt import MQTTConnectionManager
 from mpy_blox.mqtt.update import MQTTUpdateChannel
 from mpy_blox.network import connect_wlan
-from mpy_blox.syslog import init_syslog
 from mpy_blox.time import sync_ntp
 
 
@@ -26,7 +26,6 @@ def start_network(config):
 
     connect_wlan(config)
     sync_ntp(config)
-    init_syslog(config)
 
     return True
 
@@ -61,6 +60,7 @@ def main():
         micropython.alloc_emergency_exception_buf(emergency_buf_len)
 
     network_available = start_network(config)
+    blox_log_config(config, network_available)
 
     # We are booted, no more need for kernel messages
     osdebug(None)
