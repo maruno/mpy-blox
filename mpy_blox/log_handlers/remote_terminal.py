@@ -6,6 +6,8 @@ import asyncio
 import logging
 from logging import Handler, getLogger
 
+from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
+
 
 class RemoteTerminalConnection:
     def __init__(self, writer, peername):
@@ -42,7 +44,7 @@ class RemoteTerminalHandler(Handler):
         if not self.remote_conns:
             return  # NO-OP when nobody is connected
 
-        self.buffer += self.formatter.format(record).encode() + b'\n'
+        self.buffer += self.formatter.format(record) + b'\n'
         self.drain_event.set()
 
     async def drain_buffer_task(self):
@@ -81,5 +83,6 @@ async def init_remote_terminal(config):
     host = config['logging.remote_terminal.listen_host']
     port = int(config.get('logging.remote_terminal.listen_port', '8023'))
     handler = RemoteTerminalHandler(host, port)
+    handler.setFormatter(VTSGRColorFormatter())
     await handler.serve() 
     getLogger().addHandler(handler)
