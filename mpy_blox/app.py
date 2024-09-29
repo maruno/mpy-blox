@@ -13,6 +13,7 @@ from uio import StringIO
 
 from mpy_blox.config import init_config
 from mpy_blox.log_handlers import blox_log_config
+from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
 from mpy_blox.mqtt import MQTTConnectionManager
 from mpy_blox.mqtt.update import MQTTUpdateChannel
 from mpy_blox.network import connect_wlan
@@ -58,6 +59,9 @@ def main():
     if emergency_buf_len:
         logging.info("Allocating %s emergency buffer", emergency_buf_len)
         micropython.alloc_emergency_exception_buf(emergency_buf_len)
+
+    # Enable VT mode on serial terminal now
+    logging.getLogger().handlers[0].setFormatter(VTSGRColorFormatter())
 
     network_available = start_network(config)
     asyncio.run(blox_log_config(config, network_available))
