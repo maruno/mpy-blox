@@ -60,7 +60,7 @@ def main():
         micropython.alloc_emergency_exception_buf(emergency_buf_len)
 
     network_available = start_network(config)
-    blox_log_config(config, network_available)
+    asyncio.run(blox_log_config(config, network_available))
 
     # We are booted, no more need for kernel messages
     osdebug(None)
