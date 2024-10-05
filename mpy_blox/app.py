@@ -5,6 +5,7 @@
 import micropython
 
 import asyncio
+import gc
 import logging
 from esp import osdebug
 from machine import reset
@@ -69,6 +70,10 @@ def main():
 
     # We are booted, no more need for kernel messages
     osdebug(None)
+
+    # Run GC from initial boot
+    gc.collect()
+
     logging.info('Mpy-BLOX: Core succesfully booted')
     log_vfs_state('/')
     log_mem_state()
@@ -78,6 +83,9 @@ def main():
         mqtt_conn= MQTTConnectionManager.get_connection()
         asyncio.run(mqtt_conn.connect())
         asyncio.run(register_updates(config, mqtt_conn))
+
+    # Run GC after starting MQTT
+    gc.collect()
 
     try:
         from user_main import user_main
