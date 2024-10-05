@@ -29,4 +29,4 @@ def sync_ntp(config):
         else:
             break
 
-    logging.info('NTP time synchronised: %s', rtc.datetime())
+    logging.info('NTP time synchronised')
