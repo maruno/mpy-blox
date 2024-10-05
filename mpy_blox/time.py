@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import asyncio
 import logging
 import ntptime
 from machine import RTC
@@ -32,3 +33,10 @@ def sync_ntp(config):
             break
 
     logging.info('NTP time synchronised')
+
+
+async def scheduled_sync_task(config):
+    interval = int(config.get('ntp.interval', '3600'))
+    while True:
+        await asyncio.sleep(interval)
+        sync_ntp(config)
