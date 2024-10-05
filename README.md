@@ -37,7 +37,7 @@ For type `src` add the `pkg_path`.
 ## MQTT OTA update script
 To command a remote device to update with the latest version using MQTT a script is provided:
 
-`python scripts/publish_ota_update.py --device-ids esp32-840d8ed29760 --dev`
+`poetry run python scripts/publish_ota_update.py --device-ids esp32-840d8ed29760 --dev`
 
 The flag `--dev` adds a dev-flag to the version number.
 

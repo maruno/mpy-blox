@@ -22,9 +22,12 @@ include = [
 generate-setup-file = false
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.12"
 
 [tool.poetry.dev-dependencies]
+
+[tool.poetry.group.dev.dependencies]
+wheel = "^0.44.0"
 
 [tool.pyright]
 reportUnknownVariableType = false
