@@ -18,6 +18,7 @@ from mpy_blox.mqtt import MQTTConnectionManager
 from mpy_blox.mqtt.update import MQTTUpdateChannel
 from mpy_blox.network import connect_wlan
 from mpy_blox.time import sync_ntp
+from mpy_blox.util import log_vfs_state, log_mem_state
 
 
 def start_network(config):
@@ -69,6 +70,8 @@ def main():
     # We are booted, no more need for kernel messages
     osdebug(None)
     logging.info('Mpy-BLOX: Core succesfully booted')
+    log_vfs_state('/')
+    log_mem_state()
 
     if network_available:
         logging.info("MPy-BLOX: Network available, connecting MQTT")
