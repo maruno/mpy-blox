@@ -12,7 +12,9 @@ rtc = RTC()
 
 def isotime():
     dt_tup = rtc.datetime()
-    return "{}-{}-{}T{}:{}:{}.{}Z".format(*(dt_tup[0:3] + dt_tup[4:]))
+    # Making subseconds max 3 long
+    subseconds = str(dt_tup[-1])[:3]
+    return "{}-{}-{}T{}:{}:{}.{:0<3}Z".format(*(dt_tup[0:3] + dt_tup[4:-1] + (subseconds,)))
 
 
 def sync_ntp(config):
