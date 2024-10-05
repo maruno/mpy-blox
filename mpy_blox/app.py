@@ -18,7 +18,7 @@ from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
 from mpy_blox.mqtt import MQTTConnectionManager
 from mpy_blox.mqtt.update import MQTTUpdateChannel
 from mpy_blox.network import connect_wlan
-from mpy_blox.time import sync_ntp
+from mpy_blox.time import sync_ntp, scheduled_sync_task
 from mpy_blox.util import log_vfs_state, log_mem_state
 
 
@@ -29,6 +29,7 @@ def start_network(config):
 
     connect_wlan(config)
     sync_ntp(config)
+    asyncio.create_task(scheduled_sync_task(config))
 
     return True
 
