@@ -3,11 +3,13 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import asyncio
-import logging
 import ntptime
+from logging import getLogger
 from machine import RTC
 from uerrno import ETIMEDOUT
 
+
+logger = getLogger('system')
 rtc = RTC()
 
 
@@ -20,7 +22,7 @@ def isotime():
 
 def sync_ntp(config):
     ntp_host = config.get('ntp.host', 'pool.ntp.org')
-    logging.info('Synchronising time with %s', ntp_host)
+    logger.info('Synchronising time with %s', ntp_host)
 
     ntptime.host = ntp_host
     while True:
@@ -32,7 +34,7 @@ def sync_ntp(config):
         else:
             break
 
-    logging.info('NTP time synchronised')
+    logger.info('NTP time synchronised')
 
 
 async def scheduled_sync_task(config):

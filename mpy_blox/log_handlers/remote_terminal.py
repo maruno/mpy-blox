@@ -3,10 +3,12 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import asyncio
-import logging
 from logging import Handler, getLogger
 
 from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
+
+
+logger = getLogger('remote_vt')
 
 
 class RemoteTerminalConnection:
@@ -26,8 +28,8 @@ class RemoteTerminalConnection:
                 await writer.drain()
         except Exception as e:
             self.broken = True
-            logging.exception("Remote terminal %s disconnected?",
-                              self.peername, exc_info=e)
+            logger.exception("Remote terminal %s disconnected?",
+                             self.peername, exc_info=e)
 
 
 class RemoteTerminalHandler(Handler):
@@ -70,7 +72,7 @@ class RemoteTerminalHandler(Handler):
         peername = writer.get_extra_info('peername')
         self.remote_conns.append(RemoteTerminalConnection(writer, peername))
         # Log after, so remote conn sees connection established
-        logging.info("Remote terminal %s connected", peername)
+        logger.info("Remote terminal %s connected", peername)
 
     async def serve(self):
         asyncio.create_task(self.drain_buffer_task())

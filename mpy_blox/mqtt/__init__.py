@@ -3,15 +3,18 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import json
-import logging
 import asyncio
 from machine import unique_id
+from logging import getLogger
 from os import uname
 from binascii import hexlify
 
 from mpy_blox.config import config
 from mpy_blox.mqtt.protocol.client import MQTT5Client
 from mpy_blox.mqtt.protocol.message import MQTTMessage
+
+
+logger = getLogger('mqtt')
 
 
 class MQTTConnectionManager:
@@ -78,12 +81,12 @@ class MQTTConnectionManager:
             topic_consumers = self.consumers_by_topic.get(topic, set())
             if not topic_consumers:
                 # TODO Rebuild to topic filter
-                logging.warning("%s Skipping message from unknown topic",
-                                self, self.name)
+                logger.warning("%s Skipping message from unknown topic",
+                               self, self.name)
                 continue
 
             # Notify all subscribed consumers of message
-            logging.info("Processing message %s", msg)
+            logger.info("Processing message %s", msg)
             async def handle_message(msg, consumer):
                 try:
                     await consumer.handle_msg(msg)

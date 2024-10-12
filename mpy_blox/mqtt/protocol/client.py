@@ -18,10 +18,11 @@ from mpy_blox.mqtt.protocol.exc import ErrorWithMQTTReason, MQTTConnectionRefuse
 from mpy_blox.mqtt.protocol.message import MQTTMessage
 
 
-SYSTEM_ACK_TIMEOUT = const(10)
+logger = logging.getLogger('mqtt_proto')
 
 # TODO Tune this with properties and max receive size etc.
 MAX_MSGS_WAITING = const(10)
+SYSTEM_ACK_TIMEOUT = const(10)
 
 
 class MQTT5Client:
@@ -90,11 +91,11 @@ class MQTT5Client:
                 await wait_for(ping_wait(), SYSTEM_ACK_TIMEOUT)
                 ping_attempt = 0
             except TimeoutError:
-                logging.warning("Ping timed out")
+                logger.warning("Ping timed out")
                 ping_attempt += 1
                 
             if ping_attempt > 3:
-                logging.error("MQTT Keep Alive violated")
+                logger.error("MQTT Keep Alive violated")
                 # TODO Error handling, reconnect?
 
             ping_clear()
@@ -109,7 +110,7 @@ class MQTT5Client:
             # Read control packet type to switch
             header = (await readexactly(1))[0]
             control_packet_type = decode_control_packet_type(header)
-            logging.info("Start receiving control packet %s",
+            logger.info("Start receiving control packet %s",
                          control_packet_type)
 
             # Read control packet remaining length VBI
@@ -125,7 +126,7 @@ class MQTT5Client:
                         "Malformed Variable Byte Integer in control packet")
 
             remaining_length = decode_VBI(length_vbi_buffer)
-            logging.info("Reading %s remaining length",
+            logger.info("Reading %s remaining length",
                          remaining_length)
             control_packet_data = memoryview(
                 await readexactly(remaining_length))
@@ -147,17 +148,17 @@ class MQTT5Client:
                     self._disconnect_received(control_packet_data)
                     continue
             except Exception as e:
-                logging.exception("Failed parsing/handling control packet",
+                logger.exception("Failed parsing/handling control packet",
                                   exc_info=e)
 
-            logging.warning("Unknown MQTT control packet type %s",
+            logger.warning("Unknown MQTT control packet type %s",
                             control_packet_type)
 
     async def _connect(self, clean=True):
         _, writer = self.connection
         write = writer.write
 
-        logging.info("Connecting to MQTT clean=%s", clean)
+        logger.info("Connecting to MQTT clean=%s", clean)
 
         # Calculate remaining length
         remaining_length = 11  # Mandatory fields variable header
@@ -219,20 +220,20 @@ class MQTT5Client:
         # Wait for CONNACK to be received, setting future
         session_present = await wait_for(future, SYSTEM_ACK_TIMEOUT)
         if not clean and not session_present:
-            logging.warning("Session was lost")
+            logger.warning("Session was lost")
 
     def _disconnect_received(self, disconnect_data):
         reason_code = disconnect_data[1]
-        logging.info("Received server-side DISCONNECT reason=%s", reason_code)
+        logger.info("Received server-side DISCONNECT reason=%s", reason_code)
 
         await self.close(self_initiated=False)
 
     def _connack_received(self, connack_data):
         future = self.packet_futures[0]  # packet ID 0 reserved for CONNECT
         reason_code = connack_data[1]
-        logging.info("Received CONNACK reason=%s", reason_code)
+        logger.info("Received CONNACK reason=%s", reason_code)
         if reason_code != REASON_SUCCESS:
-            logging.error("Server refused CONNECT")
+            logger.error("Server refused CONNECT")
             future.set_exception(MQTTConnectionRefused(reason_code))
         else:
             session_present = bool(connack_data[0])
@@ -278,13 +279,13 @@ class MQTT5Client:
         try:
             future = self.packet_futures[packet_id]
         except KeyError:
-            logging.warning("Unknown packet id %s received", packet_id)
+            logger.warning("Unknown packet id %s received", packet_id)
             return
 
         # TODO properties
 
         reason_code = suback_data[-1]
-        logging.info("Received SUBACK reason=%s", reason_code)
+        logger.info("Received SUBACK reason=%s", reason_code)
         if reason_code in (REASON_GRANTED_QOS_0,
                            REASON_GRANTED_QOS_1,
                            REASON_GRANTED_QOS_2):
@@ -295,12 +296,12 @@ class MQTT5Client:
         del self.packet_futures[packet_id]
 
     async def unsubscribe(self, topic_filter):
-        logging.warning("Unsubscribe not implemented yet")
+        logger.warning("Unsubscribe not implemented yet")
 
     async def publish(self, msg: MQTTMessage):
         _, writer = self.connection
 
-        logging.info("Publishing %s", msg)
+        logger.info("Publishing %s", msg)
         writer.write(msg.to_packed())
         await writer.drain()
 
@@ -309,7 +310,7 @@ class MQTT5Client:
     def _publish_received(self, header, publish_data):
         # Decode msg using MQTTMessage class and let it await processing
         msg = MQTTMessage.from_packed(header, publish_data)
-        logging.info("Received message %s", msg)
+        logger.info("Received message %s", msg)
 
         self.msg_deque.appendleft(msg)
         self.msg_available.set()
