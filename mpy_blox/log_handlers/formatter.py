@@ -53,7 +53,13 @@ class VTSGRColorFormatter:
         else:
             formatted_msg += get_sgr_escape((UNDERLINE, FG_RED))
             formatted_msg += b'[critical]'
-        formatted_msg += get_sgr_escape(RESET)
         formatted_msg += b' '
         
+        # Logger name tag
+        formatted_msg += get_sgr_escape(FG_GREY)
+        formatted_msg += b'['
+        formatted_msg += record.name
+        formatted_msg += b'] '
+
+        formatted_msg += get_sgr_escape(RESET)
         return formatted_msg + (record.msg % record.args).encode()
