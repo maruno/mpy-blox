@@ -6,8 +6,8 @@ import micropython
 
 import asyncio
 import gc
-import logging
 from esp import osdebug
+from logging import getLogger
 from machine import reset
 from sys import print_exception
 from uio import StringIO
@@ -22,9 +22,12 @@ from mpy_blox.time import sync_ntp, scheduled_sync_task
 from mpy_blox.util import log_vfs_state, log_mem_state
 
 
+logger = getLogger('system')
+
+
 def start_network(config):
     if config.get('network.disabled', False):
-        logging.info("Networking disabled")
+        logger.info("Networking disabled")
         return False
 
     connect_wlan(config)
@@ -37,7 +40,7 @@ def start_network(config):
 async def register_updates(config, mqtt_connection):
     channel = config.get('update.channel')
     if not channel:
-        logging.info("MPy-BLOX: No update channel configured")
+        logger.info("MPy-BLOX: No update channel configured")
         return
 
     auto_update = config.get('update.auto_update')
@@ -46,11 +49,11 @@ async def register_updates(config, mqtt_connection):
                                        mqtt_connection)
     await update_channel.register()
     if auto_update:
-        logging.info("MPy-BLOX: Waiting for possible auto update...")
+        logger.info("MPy-BLOX: Waiting for possible auto update...")
         await update_channel.update_done.wait()
 
         if update_channel.pkgs_installed:
-            logging.info(
+            logger.info(
                 "MPy-BLOX: Update on boot succesful, rebooting with new code")
             reset()
 
@@ -60,11 +63,11 @@ def main():
 
     emergency_buf_len = int(config.get('emergency_buf_len', 100))
     if emergency_buf_len:
-        logging.info("Allocating %s emergency buffer", emergency_buf_len)
+        logger.info("Allocating %s emergency buffer", emergency_buf_len)
         micropython.alloc_emergency_exception_buf(emergency_buf_len)
 
     # Enable VT mode on serial terminal now
-    logging.getLogger().handlers[0].setFormatter(VTSGRColorFormatter())
+    getLogger().handlers[0].setFormatter(VTSGRColorFormatter())
 
     network_available = start_network(config)
     asyncio.run(blox_log_config(config, network_available))
@@ -75,12 +78,12 @@ def main():
     # Run GC from initial boot
     gc.collect()
 
-    logging.info('Mpy-BLOX: Core succesfully booted')
+    logger.info('Mpy-BLOX: Core succesfully booted')
     log_vfs_state('/')
     log_mem_state()
 
     if network_available:
-        logging.info("MPy-BLOX: Network available, connecting MQTT")
+        logger.info("MPy-BLOX: Network available, connecting MQTT")
         mqtt_conn= MQTTConnectionManager.get_connection()
         asyncio.run(mqtt_conn.connect())
         asyncio.run(register_updates(config, mqtt_conn))
@@ -92,7 +95,7 @@ def main():
         from user_main import user_main
         asyncio.run(user_main())
     except ImportError as e:
-        logging.info("Missing user_main, going to REPL")
+        logger.info("Missing user_main, going to REPL")
         print_exception(e)
 
 
@@ -100,12 +103,12 @@ def main_except_reset():
     try:
         main()
     except Exception as e:
-        logging.critical(
+        logger.critical(
             "Master exception handler, rebooting...\n")
 
         exception_info_io = StringIO()
         print_exception(e, exception_info_io)
-        logging.critical(
+        logger.critical(
             "%s: %s, Exception info follows\n\n%s",
             e.__class__.__name__, e,
             exception_info_io.getvalue())

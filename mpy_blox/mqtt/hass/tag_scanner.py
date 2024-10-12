@@ -2,10 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import logging
+from logging import getLogger
 
 from mpy_blox.mqtt.hass.disco import MQTTDiscoverable
 from mpy_blox.mqtt.protocol.message import MQTTMessage
+
+
+logger = getLogger('mqtt_hass')
 
 
 class MQTTTagScanner(MQTTDiscoverable):
@@ -20,7 +23,7 @@ class MQTTTagScanner(MQTTDiscoverable):
         }
 
     async def tag_scanned(self, tag_id):
-        logging.info("Sending tag scanned event, tag ID %s", tag_id)
+        logger.info("Sending tag scanned event, tag ID %s", tag_id)
         await self.mqtt_conn.publish(
             MQTTMessage(
                 '{}/scanned'.format(self.topic_prefix),

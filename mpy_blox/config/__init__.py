@@ -10,6 +10,9 @@ from json import load
 from mpy_blox.config.secure_nvs import SecureNVS
 
 
+logger = logging.getLogger('system')
+
+
 class OptionalSecureDict(dict):
     def __init__(self, secure_dict, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -41,10 +44,10 @@ def read_settings(settings_path=None):
         logging.basicConfig(level=getattr(logging, config['logging.level']))
     except (KeyError, AttributeError) as e:
         if isinstance(e, AttributeError):
-            logging.error("Unknown loglevel %s", config['logging.level'])
+            logger.error("Unknown loglevel %s", config['logging.level'])
         
         logging.basicConfig(level=logging.INFO)
-        logging.warning("Log level not configured, falling back to INFO")
+        logger.warning("Log level not configured, falling back to INFO")
     return config
 
 def ingest_provision_config():
@@ -56,7 +59,7 @@ def ingest_provision_config():
     except OSError:
         return  # No new provision config
 
-    logging.info("Ingesting provision config from %s", PROVISION_PATH)
+    logger.info("Ingesting provision config from %s", PROVISION_PATH)
     secure_nvs_store.update(provision_config)
     secure_nvs_store.commit()
 

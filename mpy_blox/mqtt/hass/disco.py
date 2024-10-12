@@ -2,9 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import logging
 import asyncio as asyncio
 from os import uname
+from logging import getLogger
 from machine import unique_id
 from binascii import hexlify
 
@@ -13,6 +13,8 @@ from mpy_blox.mqtt import MQTTConsumer
 from mpy_blox.mqtt.protocol.message import MQTTMessage
 from mpy_blox.wheel import pkg_info
 
+
+logger = getLogger('mqtt_hass')
 DISCO_TIME = const(30)
 
 
@@ -32,8 +34,8 @@ class MQTTDiscoverable(MQTTConsumer):
         self.discovery_prefix = discovery_prefix
 
         if device_index:
-            logging.warning("Passing device_index to %s is deprecated",
-                            self.__class__)
+            logger.warning("Passing device_index to %s is deprecated",
+                           self.__class__)
             self.device_index = device_index
         else:
             self.device_index = MQTTDiscoverable._device_index
@@ -105,8 +107,8 @@ class MQTTDiscoverable(MQTTConsumer):
 
     async def publish_config(self):
         topic = '{}/config'.format(self.topic_prefix)
-        logging.info('Sending %s discoverability config to %s',
-                     self.__class__.__name__, topic)
+        logger.info('Sending %s discoverability config to %s',
+                    self.__class__.__name__, topic)
 
         disco_config = self.app_disco_config
         disco_config.update(self.core_disco_config)

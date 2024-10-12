@@ -2,11 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import logging
 import asyncio
+from binascii import hexlify
 from hashlib import sha256
 from io import BytesIO
-from binascii import hexlify
+from logging import getLogger
 from machine import reset
 from os import remove, uname
 
@@ -17,6 +17,9 @@ from mpy_blox.mqtt import MQTTConsumer
 from mpy_blox.mqtt.protocol.message import MQTTMessage
 from mpy_blox.wheel.wheelfile import WheelFile
 from mpy_blox.util import rewrite_file
+
+
+logger = getLogger('mqtt_update')
 
 PREFIX = 'mpypi/'
 CHANNEL_PREFIX = PREFIX + 'channels/'
@@ -56,7 +59,7 @@ class MQTTUpdateChannel(MQTTConsumer):
 
     async def register(self):
         mqtt_conn = self.mqtt_conn
-        logging.info("Registering as node %s with update channel: %s",
+        logger.info("Registering as node %s with update channel: %s",
                      mqtt_conn.client_id, self.channel)
 
         unix_name = uname()
@@ -90,7 +93,7 @@ class MQTTUpdateChannel(MQTTConsumer):
             await self.handle_pkg_msg(msg)
 
     async def handle_update_list_msg(self, msg, is_commanded):
-        logging.info("Received update list from channel: %s", msg.topic)
+        logger.info("Received update list from channel: %s", msg.topic)
         self.waiting_pkgs.clear()
         for entry in msg.payload:
             update_type = entry['type']
@@ -99,19 +102,19 @@ class MQTTUpdateChannel(MQTTConsumer):
             elif update_type == 'src':
                 self.check_src_update(entry)
             else:
-                logging.warning("Skipping unknown update type %s", update_type)
+                logger.warning("Skipping unknown update type %s", update_type)
 
         if self.update_available:
             auto_update = self.auto_update
             if is_commanded:
-                logging.info("Commanded to perform upgrade")
+                logger.info("Commanded to perform upgrade")
             elif auto_update:
-                logging.info("Performing auto update...")
+                logger.info("Performing auto update...")
 
             if is_commanded or auto_update:
                 await self.perform_update()
             else:
-                logging.info("Updates are available, but won't act")
+                logger.info("Updates are available, but won't act")
         else:
             self.update_done.set()
 
@@ -123,7 +126,7 @@ class MQTTUpdateChannel(MQTTConsumer):
             return  # Skip unchanged packages
 
         # Package needs installation/update
-        logging.info("Update available: %s %s -> %s",
+        logger.info("Update available: %s %s -> %s",
                      name, installed_pkg.version, version)
         self.waiting_pkgs.add('wheel/' + entry['pkg_sha256'])
 
@@ -137,7 +140,7 @@ class MQTTUpdateChannel(MQTTConsumer):
                     return  # Skip unchanged source
 
         # Source file needs installation/update
-        logging.info("Update available for source file: %s", path)
+        logger.info("Update available for source file: %s", path)
         self.waiting_pkgs.add('src/' + path + '/' + pkg_sha256)
 
     async def handle_pkg_msg(self, msg):
@@ -158,7 +161,7 @@ class MQTTUpdateChannel(MQTTConsumer):
         elif pkg_type == 'wheel':
             self.handle_wheel_msg(msg)
         else:
-            logging.warning("Skipping unknown pkg_type")
+            logger.warning("Skipping unknown pkg_type")
             return
 
         self.pkgs_installed = True
@@ -167,18 +170,18 @@ class MQTTUpdateChannel(MQTTConsumer):
 
     def handle_src_msg(self, msg, pkg_id):
         pkg_path = '/' + pkg_id.rsplit('/', 1)[0]
-        logging.info("Processing src pkg %s", pkg_path)
+        logger.info("Processing src pkg %s", pkg_path)
 
         rewrite_file(pkg_path, msg.raw_payload)
 
     def handle_wheel_msg(self, msg):
         wheel_file = WheelFile(BytesIO(msg.raw_payload))
-        logging.info("Processing wheel pkg %s", wheel_file.pkg_name)
+        logger.info("Processing wheel pkg %s", wheel_file.pkg_name)
 
         try:
             wheel.install(wheel_file)
         except wheel.WheelExistingInstallation as ex_install_exc:
-            logging.info("Force upgrading existing installation "
+            logger.info("Force upgrading existing installation "
                          "{} -> {}".format(
                              ex_install_exc.existing_pkg.version,
                              wheel_file.package.version))
@@ -199,5 +202,5 @@ class MQTTUpdateChannel(MQTTConsumer):
         await self.update_done.wait()
 
         if self.pkgs_installed:
-            logging.info("Finished performing update, rebooting...")
+            logger.info("Finished performing update, rebooting...")
             reset()
