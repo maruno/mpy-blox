@@ -118,6 +118,4 @@ class MQTTMessage:
         # TODO properties
         packet += b'\x00'  # No properties / 0 length
 
-        import logging; logging.info("Created packaed with a raw payload of %s",
-                     self.raw_payload)
         return packet + self.raw_payload
