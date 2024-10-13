@@ -25,6 +25,13 @@ from mpy_blox.util import log_vfs_state, log_mem_state
 logger = getLogger('system')
 
 
+def asyncio_exception_handler(loop, context):
+    fut = context['future']
+    logger.warning("%s, future: %s coro=%s",
+                   context['message'],fut, fut.coro,
+                   exc_info=context['exception'])
+
+
 def start_network(config):
     if config.get('network.disabled', False):
         logger.info("Networking disabled")
@@ -65,6 +72,9 @@ def main():
     if emergency_buf_len:
         logger.info("Allocating %s emergency buffer", emergency_buf_len)
         micropython.alloc_emergency_exception_buf(emergency_buf_len)
+
+    # Register our own asyncio exception handler using logging
+    asyncio.get_event_loop().set_exception_handler(asyncio_exception_handler)
 
     # Enable VT mode on serial terminal now
     getLogger().handlers[0].setFormatter(VTSGRColorFormatter())
