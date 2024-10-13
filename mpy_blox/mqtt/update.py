@@ -202,5 +202,6 @@ class MQTTUpdateChannel(MQTTConsumer):
         await self.update_done.wait()
 
         if self.pkgs_installed:
-            logger.info("Finished performing update, rebooting...")
+            logger.info("Finished performing update, rebooting in 3s...")
+            await asyncio.sleep(3)
             reset()
