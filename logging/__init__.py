@@ -41,7 +41,12 @@ class Logger:
     def isEnabledFor(self, level):
         return level >= self.level
 
-    def log(self, level, msg, *args):
+    def log(self, level, msg, *args, exc_info=None):
+        if exc_info:
+            buf = uio.StringIO()
+            sys.print_exception(exc_info, buf)
+            msg += "\n" + buf.getvalue()
+
         dest = self
         while dest.level == NOTSET and dest.parent:
             dest = dest.parent
@@ -54,30 +59,24 @@ class Logger:
                 for hdlr in dest.handlers:
                     hdlr.emit(record)
 
-    def debug(self, msg, *args):
-        self.log(DEBUG, msg, *args)
+    def debug(self, msg, *args, exc_info=None):
+        self.log(DEBUG, msg, *args, exc_info=exc_info)
 
-    def info(self, msg, *args):
-        self.log(INFO, msg, *args)
+    def info(self, msg, *args, exc_info=None):
+        self.log(INFO, msg, *args, exc_info=exc_info)
 
-    def warning(self, msg, *args):
-        self.log(WARNING, msg, *args)
+    def warning(self, msg, *args, exc_info=None):
+        self.log(WARNING, msg, *args, exc_info=exc_info)
 
     warn = warning
 
-    def error(self, msg, *args):
-        self.log(ERROR, msg, *args)
+    def error(self, msg, *args, exc_info=None):
+        self.log(ERROR, msg, *args, exc_info=exc_info)
 
-    def critical(self, msg, *args):
-        self.log(CRITICAL, msg, *args)
+    exception = error
 
-    def exc(self, e, msg, *args):
-        buf = uio.StringIO()
-        sys.print_exception(e, buf)
-        self.log(ERROR, msg + "\n" + buf.getvalue(), *args)
-
-    def exception(self, msg, *args, exc_info=None):
-        self.exc(exc_info, msg, *args)
+    def critical(self, msg, *args, exc_info=None):
+        self.log(CRITICAL, msg, *args, exc_info=exc_info)
 
     def addHandler(self, hdlr):
         if self.handlers is None:
@@ -96,25 +95,24 @@ def getLogger(name=None):
     _loggers[name] = l
     return l
 
-def info(msg, *args):
-    getLogger(None).info(msg, *args)
+def info(msg, *args, exc_info=None):
+    getLogger(None).info(msg, *args, exc_info=exc_info)
 
-def debug(msg, *args):
-    getLogger(None).debug(msg, *args)
+def debug(msg, *args, exc_info=None):
+    getLogger(None).debug(msg, *args, exc_info=exc_info)
 
-def warning(msg, *args):
-    getLogger(None).warning(msg, *args)
+def warning(msg, *args, exc_info=None):
+    getLogger(None).warning(msg, *args, exc_info=exc_info)
 
 warn = warning
 
-def error(msg, *args):
-    getLogger(None).error(msg, *args)
+def error(msg, *args, exc_info=None):
+    getLogger(None).error(msg, *args, exc_info=exc_info)
 
-def critical(msg, *args):
-    getLogger(None).critical(msg, *args)
+exception = error
 
-def exception(msg, *args, exc_info=None):
-    getLogger(None).exception(msg, *args, exc_info=exc_info)
+def critical(msg, *args, exc_info=None):
+    getLogger(None).critical(msg, *args, exc_info=exc_info)
 
 def basicConfig(level=INFO, filename=None, stream=None, format=None, style="%"):
     root.setLevel(level)
