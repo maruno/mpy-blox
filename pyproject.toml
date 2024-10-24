@@ -28,6 +28,7 @@ python = "^3.12"
 
 [tool.poetry.group.dev.dependencies]
 wheel = "^0.44.0"
+mpy-cross = "^1.23.0.post2"
 
 [tool.pyright]
 reportUnknownVariableType = false
