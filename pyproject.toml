@@ -38,7 +38,9 @@ reportMissingParameterType = false
 reportUntypedFunctionDecorator = false
 reportUnknownParameterType = false
 reportUnknownArgumentType = false
- reportUnusedCallResult = false
+reportUnusedCallResult = false
+reportUnannotatedClassAttribute = false
+reportAny = false
 
 extraPaths = [
     "/home/mfb/Development/PyBoardTypeshed/micropython_typesheds"
