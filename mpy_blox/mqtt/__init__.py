@@ -4,7 +4,7 @@
 
 import json
 import asyncio
-from machine import unique_id
+from machine import WDT, unique_id
 from logging import getLogger
 from os import uname
 from binascii import hexlify
@@ -28,12 +28,20 @@ class MQTTConnectionManager:
         if name != 'default':
             config_key += '_{}'.format(name)
 
+        try:
+            wdt_timeout = int(config[config_key].pop('wdt_timeout'))
+            wdt = WDT(timeout=wdt_timeout)
+            on_pong = wdt.feed
+        except KeyError:
+            on_pong = None
+
         mqtt_cfg = {}
         mqtt_cfg.update(config[config_key])
 
         self.mqtt_client = MQTT5Client(
             client_id=self.client_id,
             password=config[config_key + '.password'],
+            on_pong=on_pong,
             **config[config_key])
 
     @classmethod
@@ -103,8 +111,19 @@ class MQTTConnectionManager:
     async def connect(self):
         await self.mqtt_client.connect()
         self.receive_task = asyncio.create_task(self.receive_loop())
+        asyncio.create_task(self._delay_wdt_start())
 
-    # TODO Connection log?
+    async def _delay_wdt_start(self):
+        if not self.wdt_timeout:
+            return
+
+        logger.info("%s WDT timeout configured, will activate in 1 cycle",
+                    self)
+        await asyncio.sleep_ms(self.wdt_timeout)
+
+        logger.warning("%s WDT timeout activating!", self)
+        wdt = WDT(timeout=self.wdt_timeout)
+        self.mqtt_client.on_pong = wdt.feed
 
     async def disconnect(self):
         receive_task = self.receive_task

@@ -29,7 +29,8 @@ class MQTT5Client:
     def __init__(self, server, port, client_id,
                  ssl=False, ssl_params=None,
                  username=None, password=None,
-                 keep_alive_interval=None):
+                 keep_alive_interval=None,
+                 on_pong=None):
         self.server = server
         self.port = port
         self.client_id = client_id
@@ -38,6 +39,7 @@ class MQTT5Client:
         self.username = username
         self.password = password
         self.keep_alive_interval = keep_alive_interval
+        self.on_pong = on_pong
 
         # Communication helpers
         self.connection = None
@@ -63,9 +65,10 @@ class MQTT5Client:
                                                         self.port,
                                                         self.ssl)
         self.read_task = asyncio.create_task(self._read_loop())
+        await self._connect()
+
         if self.keep_alive_interval:
             self.ping_task = asyncio.create_task(self._ping_loop())
-        await self._connect()
 
     async def __aenter__(self):
         await self.connect()
@@ -77,7 +80,7 @@ class MQTT5Client:
         drain = writer.drain
         sleep = asyncio.sleep
         ping_wait = self.ping_success.wait
-        ping_clear = self.ping_success.clear()
+        ping_clear = self.ping_success.clear
 
         interval = self.keep_alive_interval / 3
         ping_attempt = 0
@@ -90,6 +93,8 @@ class MQTT5Client:
             try:
                 await wait_for(ping_wait(), SYSTEM_ACK_TIMEOUT)
                 ping_attempt = 0
+                if self.on_pong:
+                    self.on_pong()
             except TimeoutError:
                 logger.warning("Ping timed out")
                 ping_attempt += 1
