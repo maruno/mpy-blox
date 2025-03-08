@@ -94,7 +94,7 @@ def main():
 
     if network_available:
         logger.info("MPy-BLOX: Network available, connecting MQTT")
-        mqtt_conn= MQTTConnectionManager.get_connection()
+        mqtt_conn = MQTTConnectionManager.get_connection()
         asyncio.run(mqtt_conn.connect())
         asyncio.run(register_updates(config, mqtt_conn))
 

@@ -4,7 +4,7 @@
 
 import json
 import asyncio
-from machine import unique_id
+from machine import WDT, unique_id
 from logging import getLogger
 from os import uname
 from binascii import hexlify
@@ -28,12 +28,20 @@ class MQTTConnectionManager:
         if name != 'default':
             config_key += '_{}'.format(name)
 
+        try:
+            wdt_timeout = int(config[config_key].pop('wdt_timeout'))
+            wdt = WDT(timeout=wdt_timeout)
+            on_pong = wdt.feed
+        except KeyError:
+            on_pong = None
+
         mqtt_cfg = {}
         mqtt_cfg.update(config[config_key])
 
         self.mqtt_client = MQTT5Client(
             client_id=self.client_id,
             password=config[config_key + '.password'],
+            on_pong=on_pong,
             **config[config_key])
 
     @classmethod
