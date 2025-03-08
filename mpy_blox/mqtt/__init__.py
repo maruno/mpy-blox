@@ -29,11 +29,9 @@ class MQTTConnectionManager:
             config_key += '_{}'.format(name)
 
         try:
-            wdt_timeout = int(config[config_key].pop('wdt_timeout'))
-            wdt = WDT(timeout=wdt_timeout)
-            on_pong = wdt.feed
+            self.wdt_timeout = int(config[config_key].pop('wdt_timeout'))
         except KeyError:
-            on_pong = None
+            self.wdt_timeout = None
 
         mqtt_cfg = {}
         mqtt_cfg.update(config[config_key])
@@ -41,7 +39,6 @@ class MQTTConnectionManager:
         self.mqtt_client = MQTT5Client(
             client_id=self.client_id,
             password=config[config_key + '.password'],
-            on_pong=on_pong,
             **config[config_key])
 
     @classmethod
@@ -89,8 +86,8 @@ class MQTTConnectionManager:
             topic_consumers = self.consumers_by_topic.get(topic, set())
             if not topic_consumers:
                 # TODO Rebuild to topic filter
-                logger.warning("%s Skipping message from unknown topic",
-                               self, self.name)
+                logger.warning("%s Skipping message from unknown topic %s",
+                               self, topic)
                 continue
 
             # Notify all subscribed consumers of message
@@ -99,7 +96,7 @@ class MQTTConnectionManager:
                 try:
                     await consumer.handle_msg(msg)
                 except Exception as e:
-                    logging.exception(
+                    logger.exception(
                         "Processing MQTT message %s to consumer %s failed",
                         msg, consumer, exc_info=e)
 
@@ -110,6 +107,7 @@ class MQTTConnectionManager:
 
     async def connect(self):
         await self.mqtt_client.connect()
+        logger.info("%s Connected")
         self.receive_task = asyncio.create_task(self.receive_loop())
         asyncio.create_task(self._delay_wdt_start())
 
