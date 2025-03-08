@@ -22,7 +22,7 @@ EOCD_SIG = b'PK\x05\x06'
 EOCD_STRUCT = '<4s4H2LH'
 EOCD_SIZE = struct.calcsize(EOCD_STRUCT)
 CD_F_H_SIG = b'PK\x01\x02'
-CD_F_H_STRUCT =    '<4s4B4H3L5H2L'
+CD_F_H_STRUCT = '<4s4B4H3L5H2L'
 CD_F_H_SIZE = struct.calcsize(CD_F_H_STRUCT)
 LOCAL_F_H_STRUCT = '<4s2B4HL2L2H'
 LOCAL_F_H_SIZE = struct.calcsize(LOCAL_F_H_STRUCT)
@@ -77,8 +77,7 @@ class ZipFile:
          central_dir_count,
          central_dir_size,
          central_dir_offset,
-         comment_len) = struct.unpack(EOCD_STRUCT,
-                                       file_obj.read(EOCD_SIZE))
+         comment_len) = struct.unpack(EOCD_STRUCT, file_obj.read(EOCD_SIZE))
 
         if magic_number != EOCD_SIG:
             raise BadZipFile(
