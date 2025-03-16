@@ -11,7 +11,8 @@ from mpy_blox.mqtt.protocol import (decode_VBI,
                                     encode_control_packet_fixed_header,
                                     encode_string)
 from mpy_blox.mqtt.protocol.const import (
-    CLEAN_FLAG, CONNACK, CONNECT, DISCONNECT, PASSWORD_FLAG, PINGRESP, PUBLISH,
+    CLEAN_FLAG, CONNACK, CONNECT, DISCONNECT, PASSWORD_FLAG,
+    PINGREQ, PINGRESP, PUBLISH,
     REASON_GRANTED_QOS_0, REASON_GRANTED_QOS_1, REASON_GRANTED_QOS_2,
     REASON_SUCCESS, SUBACK, SUBSCRIBE, USERNAME_FLAG) 
 from mpy_blox.mqtt.protocol.exc import ErrorWithMQTTReason, MQTTConnectionRefused
@@ -29,7 +30,8 @@ class MQTT5Client:
     def __init__(self, server, port, client_id,
                  ssl=False, ssl_params=None,
                  username=None, password=None,
-                 keep_alive_interval=None):
+                 keep_alive_interval=None,
+                 on_pong=None):
         self.server = server
         self.port = port
         self.client_id = client_id
@@ -38,6 +40,7 @@ class MQTT5Client:
         self.username = username
         self.password = password
         self.keep_alive_interval = keep_alive_interval
+        self.on_pong = on_pong
 
         # Communication helpers
         self.connection = None
@@ -63,9 +66,12 @@ class MQTT5Client:
                                                         self.port,
                                                         self.ssl)
         self.read_task = asyncio.create_task(self._read_loop())
-        if self.keep_alive_interval:
-            self.ping_task = asyncio.create_task(self._ping_loop())
         await self._connect()
+
+        logger.info("Keep alive interval: %s", self.keep_alive_interval)
+        if self.keep_alive_interval:
+            logger.info("Creating task for ping")
+            self.ping_task = asyncio.create_task(self._ping_loop())
 
     async def __aenter__(self):
         await self.connect()
@@ -77,19 +83,25 @@ class MQTT5Client:
         drain = writer.drain
         sleep = asyncio.sleep
         ping_wait = self.ping_success.wait
-        ping_clear = self.ping_success.clear()
+        ping_clear = self.ping_success.clear
 
         interval = self.keep_alive_interval / 3
         ping_attempt = 0
+        logger.info("Starting ping loop")
         while True:
             if not ping_attempt:
                 await sleep(interval)
+
             write(encode_control_packet_fixed_header(PINGREQ, 0))
             await drain()
+            logger.info("PINGREQ send")
             
             try:
                 await wait_for(ping_wait(), SYSTEM_ACK_TIMEOUT)
+                logger.info("Received PINGRESP")
                 ping_attempt = 0
+                if self.on_pong:
+                    self.on_pong()
             except TimeoutError:
                 logger.warning("Ping timed out")
                 ping_attempt += 1
@@ -110,7 +122,7 @@ class MQTT5Client:
             # Read control packet type to switch
             header = (await readexactly(1))[0]
             control_packet_type = decode_control_packet_type(header)
-            logger.info("Start receiving control packet %s",
+            logger.debug("Start receiving control packet %s",
                          control_packet_type)
 
             # Read control packet remaining length VBI
@@ -126,7 +138,7 @@ class MQTT5Client:
                         "Malformed Variable Byte Integer in control packet")
 
             remaining_length = decode_VBI(length_vbi_buffer)
-            logger.info("Reading %s remaining length",
+            logger.debug("Reading %s remaining length",
                          remaining_length)
             control_packet_data = memoryview(
                 await readexactly(remaining_length))

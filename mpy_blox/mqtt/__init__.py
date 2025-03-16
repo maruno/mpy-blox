@@ -4,7 +4,7 @@
 
 import json
 import asyncio
-from machine import unique_id
+from machine import WDT, unique_id
 from logging import getLogger
 from os import uname
 from binascii import hexlify
@@ -27,6 +27,13 @@ class MQTTConnectionManager:
         config_key = 'mqtt'
         if name != 'default':
             config_key += '_{}'.format(name)
+
+        try:
+            self.wdt_timeout = int(config[config_key].pop('wdt_timeout'))
+            config[config_key]['keep_alive_interval'] = int(
+                self.wdt_timeout / 1000)
+        except KeyError:
+            self.wdt_timeout = None
 
         mqtt_cfg = {}
         mqtt_cfg.update(config[config_key])
@@ -81,8 +88,8 @@ class MQTTConnectionManager:
             topic_consumers = self.consumers_by_topic.get(topic, set())
             if not topic_consumers:
                 # TODO Rebuild to topic filter
-                logger.warning("%s Skipping message from unknown topic",
-                               self, self.name)
+                logger.warning("%s Skipping message from unknown topic %s",
+                               self, topic)
                 continue
 
             # Notify all subscribed consumers of message
@@ -91,7 +98,7 @@ class MQTTConnectionManager:
                 try:
                     await consumer.handle_msg(msg)
                 except Exception as e:
-                    logging.exception(
+                    logger.exception(
                         "Processing MQTT message %s to consumer %s failed",
                         msg, consumer, exc_info=e)
 
@@ -102,9 +109,21 @@ class MQTTConnectionManager:
 
     async def connect(self):
         await self.mqtt_client.connect()
+        logger.info("%s Connected", self)
         self.receive_task = asyncio.create_task(self.receive_loop())
+        asyncio.create_task(self._delay_wdt_start())
 
-    # TODO Connection log?
+    async def _delay_wdt_start(self):
+        if not self.wdt_timeout:
+            return
+
+        logger.info("%s WDT timeout configured, will activate in 1 cycle",
+                    self)
+        await asyncio.sleep_ms(self.wdt_timeout)
+
+        logger.warning("%s WDT timeout activating!", self)
+        wdt = WDT(timeout=self.wdt_timeout)
+        self.mqtt_client.on_pong = wdt.feed
 
     async def disconnect(self):
         receive_task = self.receive_task
