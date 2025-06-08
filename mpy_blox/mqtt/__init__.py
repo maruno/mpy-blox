@@ -61,6 +61,7 @@ class MQTTConnectionManager:
                               hexlify(unique_id()).decode())
 
     async def subscribe(self, topic, consumer):
+        logger.info("Subscribing to %s", topic)
         consumers_by_topic = self.consumers_by_topic
         try:
             topic_consumers = consumers_by_topic[topic]
