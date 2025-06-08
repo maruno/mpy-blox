@@ -59,7 +59,7 @@ class MQTTMessage:
         if isinstance(new_value, str):
             self.raw_payload = new_value.encode()
         elif not isinstance(new_value, bytes):
-            self.raw_payload = json.dumps(new_value)
+            self.raw_payload = json.dumps(new_value).encode()
 
     def __str__(self) -> str:
         return "MQTTMessage<topic={}, qos={}, payload={} bytes>".format(
