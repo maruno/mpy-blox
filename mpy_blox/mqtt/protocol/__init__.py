@@ -82,7 +82,13 @@ def decode_string(mv_to_decode) -> tuple[int, str]:
 # MQTT Control packet fixed header
 @micropython.viper
 def encode_control_packet_type(control_packet_type: int) -> int:
-    return control_packet_type << 4
+    first_byte = control_packet_type << 4
+    if (control_packet_type == 8
+            or control_packet_type == 10
+            or control_packet_type == 6):
+        # These two packets have strange reserved bit requirements
+        first_byte |= 0b0010
+    return first_byte
 
 
 def encode_control_packet_fixed_header(type_id, remaining_length):
