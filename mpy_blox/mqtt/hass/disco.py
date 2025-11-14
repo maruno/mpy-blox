@@ -41,6 +41,9 @@ class MQTTDiscoverable(MQTTConsumer):
             self.device_index = MQTTDiscoverable._device_index
             MQTTDiscoverable._device_index += 1
 
+    def __str__(self) -> str:
+        return "<{} name={}>".format(self.__class__.__name__, self.name)
+
     @property
     def device_id(self):
         return '{}-{}'.format(uname().sysname,
