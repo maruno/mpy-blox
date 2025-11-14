@@ -2,35 +2,23 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-import asyncio
-import json
 from machine import Pin
 
-from mpy_blox.mqtt.hass.disco import MQTTMutableDiscoverable
+from mpy_blox.mqtt.hass.on_off_toggle import MQTTOnOffTogglable
 
 
-class MQTTSwitch(MQTTMutableDiscoverable):
+class MQTTSwitch(MQTTOnOffTogglable):
     component_type = 'switch'
-
-    def __init__(self, name, pin_id, mqtt_connection,
-                 discovery_prefix = 'homeassistant'):
-        super().__init__(name,
-                         mqtt_connection,
-                         discovery_prefix=discovery_prefix)
-        self.pin = Pin(pin_id, Pin.OUT)
 
     @property
     def app_disco_config(self):
         return {}
 
-    @property
-    def app_state(self):
-        return 'ON' if self.pin.value() else 'OFF'
+    @staticmethod
+    def get_unified_command(payload):
+        if isinstance(payload, bytes):
+            return {
+                'state': payload.decode() 
+            }
 
-    async def handle_msg(self, msg):
-        self.pin.value(msg.payload == b'ON')
-        asyncio.create_task(self.publish_state())
-
-    async def register(self):
-        await super().register()
-        await self.publish_state()
+        return payload
