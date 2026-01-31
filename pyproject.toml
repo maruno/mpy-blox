@@ -2,7 +2,7 @@
 name = "mpy-blox"
 version = "0.4.5"
 description = "MicroPython building blox"
-authors = ["Michel Bouwmans <m.bouwmans@ep-games.eu>"]
+authors = ["Maruno Ulfdrengr <maruno@ulfdrengr.nl>"]
 license = "MPL-2.0"
 packages = [
     {include="mpy_blox"},
@@ -13,7 +13,6 @@ exclude = [
     "setup.py",
 ]
 include = [
-    "mqtt_as.mpy",
     "README.md",
     "main.py"
 ]
@@ -27,8 +26,8 @@ python = "^3.12"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.group.dev.dependencies]
-wheel = "^0.44.0"
-mpy-cross = "^1.23.0.post2"
+wheel = "^0.46.3"
+mpy-cross = "^1.27.0.post2"
 
 [tool.pyright]
 reportUnknownVariableType = false
@@ -41,10 +40,6 @@ reportUnknownArgumentType = false
 reportUnusedCallResult = false
 reportUnannotatedClassAttribute = false
 reportAny = false
-
-extraPaths = [
-    "/home/mfb/Development/PyBoardTypeshed/micropython_typesheds"
-]
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
