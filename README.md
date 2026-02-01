@@ -75,3 +75,62 @@ Be sure to set `DEVICE` when having multiple (serial) devices connected, e.g.: `
 ### Misc
 * repl: Open a REPL
 * mounted-repl: Open a REPL with the current directory mounted as a remote filesystem.
+
+## UNIX platform
+Limited support for the UNIX micropython port is available. Most modules will >not< be available,
+e.g. anything to do with hardware and without the full managed app mode!
+
+### Build instructions
+Use `make dist-unix` to create a wheel file for the UNIX-platform. By default, this will create a
+wheel for the x64-architecture! You can specify the platform manually using `UNIX_MARCH` with one
+of the options crom `mpy-cross` in case you need it for another platform,
+for example: `make UNIX_MARCH=armv6 dist-unix`
+
+### UNIX specific features: asyncio subprocess support
+To facilitate scripting and run other command line applications, a `async_process.AsyncProcess`
+class/module is provided akin to CPython's 'subprocess' for micropython.
+
+The class allows you to run and manage applications using a context interface and asyncio streams:
+
+```python
+from mpy_blox.unix.async_process import AsyncProcess
+
+async def async_main():
+    with AsyncProcess('bash', '-c', 'echo "line 1"; sleep 1; echo "line 2"; sleep 1; echo "line 3"') as p:
+        while True:
+            line = await p.stdout.read()
+            if not line:
+                break
+            print(line.decode())
+
+        p.close()
+        print(f"Exit code: {p.exit_code}")
+
+asyncio.run(async_main())
+```
+
+### Deploying UNIX app
+There is a very limited UNIX deployment available using make target `deploy-unix`. To make use
+of it be sure to create an empty folder you want to use as the containment, it will only work
+with an empty folder for the initial setup. Connection credentials need to be provided through
+an active ssh-agent with pubkey support, provide the connection details using `UNIX_SFTP_DESTINATION`.
+
+The `deploy-unix` target will populate the folder with the lib and your `settings.json` and
+`user_main.py`:
+
+```console
+$ make UNIX_SFTP_DESTINATION="root@10.10.0.2:micropython" UNIX_MARCH=armv6 deploy-unix
+...
+$ ssh root@10.10.0.2                                                                  
+...
+root@OpenWrt:~# cd micropython/
+root@OpenWrt:~/micropython# micropython unix_main.py 
+INFO:system:VFS state /: 12115.968/23719.936, free 11603.968 (kB), blocksize 4096
+INFO:system:Memory heap state: 14.832/1024.528, free 1009.696 (kB)
+INFO:system:Mpy-BLOX: Limited UNIX Core succesfully loaded
+INFO:root:Hello from user_main :)
+root@OpenWrt:~/micropython# 
+```
+
+After the initial setup best to just manually update your files, unless you want to purge
+the folder each time. But this helps you get started.
