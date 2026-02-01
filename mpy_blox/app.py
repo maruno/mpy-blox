@@ -88,9 +88,9 @@ def main():
     # Run GC from initial boot
     gc.collect()
 
-    logger.info('Mpy-BLOX: Core succesfully booted')
     log_vfs_state('/')
     log_mem_state()
+    logger.info('Mpy-BLOX: Core succesfully booted')
 
     if network_available:
         logger.info("MPy-BLOX: Network available, connecting MQTT")
