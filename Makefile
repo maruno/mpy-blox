@@ -113,6 +113,12 @@ deploy-lib: dist
 	@echo "Deployment succeeded, resetting device"
 	@$(MPREMOTE_CMD) reset
 
+.PHONY: deploy-unix
+deploy-unix: dist-unix
+	@: $(if $(UNIX_SFTP_DESTINATION),,$(error UNIX_SFTP_DESTINATION is not set))
+	@cd dist; wheel unpack $(WHEEL_VERSION)-mpy6-bytecode-unix_$(UNIX_MARCH).whl
+	@sftp -b unix-deploy-batchfile $(UNIX_SFTP_DESTINATION)
+
 .PHONY: purge-lib
 purge-lib:
 	@echo "Purging device of all libraries"
