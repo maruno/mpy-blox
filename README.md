@@ -95,7 +95,7 @@ The class allows you to run and manage applications using a context interface an
 ```python
 from mpy_blox.unix.async_process import AsyncProcess
 
-async def async_main():
+async def user_main():
     with AsyncProcess('bash', '-c', 'echo "line 1"; sleep 1; echo "line 2"; sleep 1; echo "line 3"') as p:
         while True:
             line = await p.stdout.read()
@@ -105,8 +105,6 @@ async def async_main():
 
         p.close()
         print(f"Exit code: {p.exit_code}")
-
-asyncio.run(async_main())
 ```
 
 ### Deploying UNIX app
