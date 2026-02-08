@@ -63,8 +63,9 @@ class AsyncFDStream:
     async def wait(self):
         poll = self.poller.poll
         check_ms = self.check_ms
-        while poll(0):
+        while not poll(0):
             await sleep_ms(check_ms)
+
 
 class AsyncFDStreamReader(AsyncFDStream):
     mode_mask = select.POLLIN
@@ -81,6 +82,7 @@ class AsyncFDStreamReader(AsyncFDStream):
 
     def close(self):
         close(self.fd)
+
 
 class AsyncProcess:
     def __init__(self, program: str, *args: str) -> None:
