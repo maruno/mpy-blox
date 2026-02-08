@@ -85,39 +85,47 @@ class AsyncFDStreamReader(AsyncFDStream):
 
 
 class AsyncProcess:
-    def __init__(self, program: str, *args: str) -> None:
+    def __init__(self, program: str, *args: str,
+                 stdout: bool = True, stderr: bool = False) -> None:
         self.exit_code: int | None = None
 
         file_actions: bytearray | None = None
         try:
-            # Create pipes for communication
+            # Create pipes for communication if needed
             pipe_fds = bytearray(8) # int[2]
             file_actions = bytearray(80)  # posix_spawn_file_actions_t
             posix_spawn_file_actions_init(file_actions)
 
             # stdout
-            if pipe(pipe_fds) == -1:
-                raise OSError("pipe failed (stdout)")
-            stdout_read_pipe, stdout_write_pipe = struct.unpack('ii', pipe_fds)
-            posix_spawn_file_actions_adddup2(file_actions, stdout_write_pipe, 1)
-            posix_spawn_file_actions_addclose(file_actions, stdout_read_pipe)
-            posix_spawn_file_actions_addclose(file_actions, stdout_write_pipe)
+            stdout_write_pipe = None
+            if stdout:
+                if pipe(pipe_fds) == -1:
+                    raise OSError("pipe failed (stdout)")
+                stdout_read_pipe, stdout_write_pipe = struct.unpack('ii', pipe_fds)
+                posix_spawn_file_actions_adddup2(file_actions, stdout_write_pipe, 1)
+                posix_spawn_file_actions_addclose(file_actions, stdout_read_pipe)
+                posix_spawn_file_actions_addclose(file_actions, stdout_write_pipe)
+                self.stdout = AsyncFDStreamReader(stdout_read_pipe)
+            else:
+                posix_spawn_file_actions_addclose(file_actions, 1)
+                self.stdout = None
 
             # stderr
-            if pipe(pipe_fds) == -1:
-                raise OSError("pipe failed (stderr)")
-            stderr_read_pipe, stderr_write_pipe = struct.unpack('ii', pipe_fds)
-            posix_spawn_file_actions_adddup2(file_actions, stderr_write_pipe, 2)
-            posix_spawn_file_actions_addclose(file_actions, stderr_read_pipe)
-            posix_spawn_file_actions_addclose(file_actions, stderr_write_pipe)
-
-            self.argv, self.args = _build_argv(program, *args)
-
-            # Register streams
-            self.stdout = AsyncFDStreamReader(stdout_read_pipe)
-            self.stderr = AsyncFDStreamReader(stderr_read_pipe)
+            stderr_write_pipe = None
+            if stderr:
+                if pipe(pipe_fds) == -1:
+                    raise OSError("pipe failed (stderr)")
+                stderr_read_pipe, stderr_write_pipe = struct.unpack('ii', pipe_fds)
+                posix_spawn_file_actions_adddup2(file_actions, stderr_write_pipe, 2)
+                posix_spawn_file_actions_addclose(file_actions, stderr_read_pipe)
+                posix_spawn_file_actions_addclose(file_actions, stderr_write_pipe)
+                self.stderr = AsyncFDStreamReader(stderr_read_pipe)
+            else:
+                posix_spawn_file_actions_addclose(file_actions, 2)
+                self.stderr = None
 
             # Spawn process
+            self.argv, self.args = _build_argv(program, *args)
             pid_buf = bytearray(4)
             result = posix_spawnp(
                 pid_buf,  # pid output
@@ -136,15 +144,19 @@ class AsyncProcess:
                 posix_spawn_file_actions_destroy(file_actions)
 
         # Only keep read ends of stdout/stderr
-        close(stdout_write_pipe)
-        close(stderr_write_pipe)
+        if stdout_write_pipe is not None:
+            close(stdout_write_pipe)
+        if stderr_write_pipe is not None:
+            close(stderr_write_pipe)
 
     def close(self):
         if self.exit_code:
             return None
 
-        self.stdout.close()
-        self.stderr.close()
+        if self.stdout:
+            self.stdout.close()
+        if self.stderr:
+            self.stderr.close()
 
         status = bytearray(4)
         waitpid(self.pid, status, 0)
