@@ -21,6 +21,7 @@ class MQTTBinarySensor(MQTTDiscoverableState):
         self.dev_cls = device_class
         self.state = None
         self.disco_task = None
+        self.var_value = 'OFF'
 
     @property
     def app_disco_config(self):
@@ -35,10 +36,14 @@ class MQTTBinarySensor(MQTTDiscoverableState):
 
     def set_variable(self, var_value):
         self.var_value = 'ON' if var_value is True else 'OFF'
-        create_task(self.publish_state())
+        asyncio.create_task(self.publish_state())
 
     @property
     def app_state(self):
         return {
             self.var_name: self.var_value
         }
+
+    async def register(self):
+        await super().register()
+        await self.publish_state()
