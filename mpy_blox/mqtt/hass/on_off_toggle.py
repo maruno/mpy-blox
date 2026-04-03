@@ -19,6 +19,7 @@ class MQTTOnOffTogglable(MQTTMutableDiscoverable):
                          mqtt_connection,
                          discovery_prefix=discovery_prefix)
         self.pin = Pin(pin_id, Pin.OUT)
+        self.pin.value(False)
         self.duration_reset_task = None
 
     @property
@@ -28,10 +29,12 @@ class MQTTOnOffTogglable(MQTTMutableDiscoverable):
     def turn_on(self):
         logger.info("%s Turning on", self)
         self.pin.value(True)
+        asyncio.create_task(self.publish_state())
     
     def turn_off(self):
         logger.info("%s Turning off", self)
         self.pin.value(False)
+        asyncio.create_task(self.publish_state())
 
     def toggle(self):
         logger.info("%s Toggling", self)
@@ -73,8 +76,6 @@ class MQTTOnOffTogglable(MQTTMutableDiscoverable):
         if 'duration' in cmd and self.pin.value():
             self.duration_reset_task = asyncio.create_task(
                 self.reset_after_duration(cmd['duration']))
-
-        asyncio.create_task(self.publish_state())
 
     async def register(self):
         await super().register()
