@@ -58,7 +58,7 @@ dist-src: clean
 
 .PHONY: list-exclusions
 list-exclusions: dist-src
-	@cd dist; wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; poetry run wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
 	@echo "Files that will be excluded from UNIX build (ESP32-only):"
 	@cd dist/$(WHEEL_VERSION); \
 		for pattern in $(ESP32_ONLY_PATTERNS); do \
@@ -75,11 +75,11 @@ list-exclusions: dist-src
 .PHONY: dist-esp32
 dist-esp32: dist-src
 	@echo Building micropython optimized wheel for ESP32
-	@cd dist; wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; poetry run wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
 	@echo "Byte-compiling for micropython (ESP32)"
-	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do mpy-cross -march=xtensawin $${py_file} && rm $${py_file}; done
+	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do poetry run mpy-cross -march=xtensawin $${py_file} && rm $${py_file}; done
 	@cd dist/$(WHEEL_VERSION)/$(WHEEL_VERSION).dist-info; echo "c\nTag: mpy6-bytecode-esp32\n.\nw\nq" | ed WHEEL > /dev/null
-	@cd dist; wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; poetry run wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
 	@cd dist; rm -r $(WHEEL_VERSION)
 	@echo "Creating deployment hardlink (ESP32)"
 	@cd dist; ln $(WHEEL_VERSION)-mpy6-bytecode-esp32.whl mpy_blox-latest-mpy6-bytecode-esp32.whl
@@ -87,16 +87,16 @@ dist-esp32: dist-src
 .PHONY: dist-unix
 dist-unix: dist-src
 	@echo Building micropython optimized wheel or UNIX
-	@cd dist; wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; poetry run wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
 	@echo "Removing ESP32-specific modules"
 	@cd dist/$(WHEEL_VERSION); \
 		for pattern in $(ESP32_ONLY_PATTERNS); do \
 			find . -wholename "$$pattern" -delete 2>/dev/null; \
 		done
 	@echo "Byte-compiling for micropython (platform-independant/UNIX)"
-	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do mpy-cross -march=$(UNIX_MARCH) $${py_file} && rm $${py_file}; done
+	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do poetry run mpy-cross -march=$(UNIX_MARCH) $${py_file} && rm $${py_file}; done
 	@cd dist/$(WHEEL_VERSION)/$(WHEEL_VERSION).dist-info; echo "c\nTag: mpy6-bytecode-unix_$(UNIX_MARCH)\n.\nw\nq" | ed WHEEL > /dev/null
-	@cd dist; wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
+	@cd dist; poetry run wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
 	@cd dist; rm -r $(WHEEL_VERSION)
 	@echo "Creating deployment hardlink (UNIX)"
 	@cd dist; ln $(WHEEL_VERSION)-mpy6-bytecode-unix_$(UNIX_MARCH).whl mpy_blox-latest-mpy6-bytecode-unix_$(UNIX_MARCH).whl
@@ -116,7 +116,7 @@ deploy-lib: dist
 .PHONY: deploy-unix
 deploy-unix: dist-unix
 	@: $(if $(UNIX_SFTP_DESTINATION),,$(error UNIX_SFTP_DESTINATION is not set))
-	@cd dist; wheel unpack $(WHEEL_VERSION)-mpy6-bytecode-unix_$(UNIX_MARCH).whl
+	@cd dist; poetry run wheel unpack $(WHEEL_VERSION)-mpy6-bytecode-unix_$(UNIX_MARCH).whl
 	@sftp -b unix-deploy-batchfile $(UNIX_SFTP_DESTINATION)
 
 .PHONY: purge-lib
