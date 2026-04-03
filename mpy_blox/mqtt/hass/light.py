@@ -11,6 +11,12 @@ class MQTTLight(MQTTOnOffTogglable):
     component_type = 'light'
 
     @property
+    def app_state(self):
+        return {
+            'state': 'ON' if self.pin.value() else 'OFF'
+        }
+
+    @property
     def app_disco_config(self):
         return {'brightness': False, 'schema': 'json'}
     
