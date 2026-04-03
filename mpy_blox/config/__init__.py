@@ -37,9 +37,10 @@ SETTINGS_PATH = '/settings.json'
 PROVISION_PATH = '/provision.json'
 
 
-def read_settings(settings_path=None):
+def read_settings(settings_path: str | None = None):
     logging.basicConfig(level=logging.DEBUG)
-    with open(settings_path or SETTINGS_PATH, 'r') as settings_f:
+    settings_path = settings_path or SETTINGS_PATH
+    with open(settings_path, 'r') as settings_f:
         config = load(settings_f)
 
     try:
@@ -52,10 +53,11 @@ def read_settings(settings_path=None):
         logger.warning("Log level not configured, falling back to INFO")
     return config
 
-def ingest_provision_config(provision_path=None):
+def ingest_provision_config(provision_path: str | None = None):
     global secure_nvs_store
+    provision_path = provision_path or PROVISION_PATH
     try:
-        with open(provision_path or PROVISION_PATH, 'r') as provision_f:
+        with open(provision_path, 'r') as provision_f:
             provision_config = load(provision_f)
     except OSError:
         return  # No new provision config
