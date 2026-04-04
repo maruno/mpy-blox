@@ -26,14 +26,20 @@ class MQTTOnOffTogglable(MQTTMutableDiscoverable):
     def app_state(self):
         return 'ON' if self.pin.value() else 'OFF'
 
+    def _turn_on(self):
+        self.pin.value(True)
+
     def turn_on(self):
         logger.info("%s Turning on", self)
-        self.pin.value(True)
+        self._turn_on()
         asyncio.create_task(self.publish_state())
     
+    def _turn_off(self):
+        self.pin.value(False)
+
     def turn_off(self):
         logger.info("%s Turning off", self)
-        self.pin.value(False)
+        self._turn_off()
         asyncio.create_task(self.publish_state())
 
     def toggle(self):
