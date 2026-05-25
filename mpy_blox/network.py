@@ -28,8 +28,25 @@ def connect_wlan(config):
                        "Can't boot with network support")
         return
 
+    check_count = 0
     while not wlan.isconnected():
-        logger.info('Waiting for WLAN connection...')
+        status = wlan.status()
+        if status == network.STAT_IDLE:
+            logger.info("WLAN Idle?")
+        elif status == network.STAT_CONNECTING:
+            logger.info("WLAN Connecting...")
+        elif status == network.STAT_WONG_PASSWORD:
+            logger.info("WLAN Wrong password!")
+        elif status == network.STAT_NO_AP_FOUND:
+            logger.info("WLAN AP not found!")
+        elif status == network.STAT_CONNECT_FAIL:
+            logger.info("WLAN connection failed!")
+
+        if check_count > 15:
+            logging.warning("WLAN should be connected by now, rebooting")
+            raise RuntimeError("Broken WLAN")
+
+        check_count += 1
         sleep(1.0)
     
     sleep(1.0)  # Seems to be needed to ensure connectivity...
