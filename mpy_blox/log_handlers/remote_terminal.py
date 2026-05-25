@@ -3,9 +3,11 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 import asyncio
-from logging import Handler, getLogger
+from logging import Handler, LogRecord, getLogger
 
-from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
+from mpy_blox.log_handlers.formatter import (VTSGRColorFormatter,
+                                             FG_GREY, RESET,
+                                             get_sgr_escape)
 
 
 logger = getLogger('remote_vt')
@@ -31,18 +33,37 @@ class RemoteTerminalConnection:
             logger.exception("Remote terminal %s disconnected?",
                              self.peername, exc_info=e)
 
+    async def replay(self, replay_buffer):
+        drain_buffer = b''
+        record_count = 0
+        for record in replay_buffer:
+            drain_buffer += record + '\n'
+            record_count += 1
+
+            # Drain every 10 lines
+            if (record_count % 10) == 0:
+                await self.write(drain_buffer)
+                drain_buffer = b''
+
+        drain_buffer += (get_sgr_escape(FG_GREY)
+                         + b'--- End of log replay ---'
+                         + get_sgr_escape(RESET) + b'\n');
+        await self.write(drain_buffer)
+
 
 class RemoteTerminalHandler(Handler):
-    def __init__(self, host, port):
+    def __init__(self, host, port, replay_buffer = None):
         super().__init__()
 
         self.host = host
         self.port = port
         self.remote_conns = []
-        self.buffer = b''
         self.drain_event = asyncio.Event()
 
-    def emit(self, record):
+        self.buffer = b''
+        self.replay_buffer = replay_buffer
+
+    def emit(self, record: LogRecord):
         if not self.remote_conns:
             return  # NO-OP when nobody is connected
 
@@ -70,7 +91,12 @@ class RemoteTerminalHandler(Handler):
 
     async def handle_new_client(self, _, writer):
         peername = writer.get_extra_info('peername')
-        self.remote_conns.append(RemoteTerminalConnection(writer, peername))
+        remote_conn = RemoteTerminalConnection(writer, peername)
+        self.remote_conns.append(remote_conn)
+
+        if self.replay_buffer:
+            await remote_conn.replay(self.replay_buffer)
+
         # Log after, so remote conn sees connection established
         logger.info("Remote terminal %s connected", peername)
 
@@ -81,10 +107,10 @@ class RemoteTerminalHandler(Handler):
         # TODO Handle network outages and cleaning/recreating server
 
 
-async def init_remote_terminal(config):
+async def init_remote_terminal(config, replay_buffer):
     host = config['logging.remote_terminal.listen_host']
     port = int(config.get('logging.remote_terminal.listen_port', '8023'))
-    handler = RemoteTerminalHandler(host, port)
+    handler = RemoteTerminalHandler(host, port, replay_buffer)
     handler.setFormatter(VTSGRColorFormatter())
     await handler.serve() 
     getLogger().addHandler(handler)

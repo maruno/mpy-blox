@@ -29,9 +29,15 @@ def get_sgr_escape(codes):
 
 
 class VTSGRColorFormatter:
-    def format(self, record):
+    def __init__(self, replay_mode=False):
+        self.replay_mode = replay_mode
+
+    def format(self, record) -> bytes:
         # Start with date
-        formatted_msg = get_sgr_escape(FG_CYAN)
+        if self.replay_mode:
+            formatted_msg = get_sgr_escape(FG_GREY) + b'[RP]'
+        else:
+            formatted_msg = get_sgr_escape(FG_CYAN)
         formatted_msg += isotime().encode()
         formatted_msg += get_sgr_escape(RESET)
         formatted_msg += b' '
