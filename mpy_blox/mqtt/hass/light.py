@@ -65,7 +65,7 @@ class MQTTDimmableLight(MQTTLight):
     def get_previous_duty(self) -> int:
         # TODO for ESP32, retrieve from NVS?
         prev_duty = self._prev_duty
-        if prev_duty is None:
+        if not prev_duty:  # Previous duty was not set or somehow 0
             self._prev_duty = prev_duty = DEFAULT_DUTY
 
         return prev_duty
@@ -79,6 +79,10 @@ class MQTTDimmableLight(MQTTLight):
 
         # Capture and change duty ASAP
         prev_duty = duty()
+        if not prev_duty:
+            return  # NO-OP, already off
+
+        # Set the new duty
         duty(0)
 
         # Now presist duty (If NVS is used, latency cost?)
