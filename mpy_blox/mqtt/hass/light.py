@@ -2,9 +2,11 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-from logging import getLogger
 from micropython import const
+
+from logging import getLogger
 from machine import PWM
+from esp32 import NVS
 from math import ceil
 
 from mpy_blox.mqtt.hass.on_off_toggle import MQTTOnOffTogglable
@@ -41,6 +43,7 @@ class MQTTDimmableLight(MQTTLight):
         super().__init__(name, pin_id, mqtt_connection, discovery_prefix)
         self._prev_duty: int | None = None
         self.pwm = PWM(self.pin, freq=PWM_FREQ, duty=0)
+        self.nvs = NVS('light-' + str(self.device_index))
 
     @property
     def app_disco_config(self):
@@ -63,16 +66,22 @@ class MQTTDimmableLight(MQTTLight):
         self.pwm.duty(self.get_previous_duty())
 
     def get_previous_duty(self) -> int:
-        # TODO for ESP32, retrieve from NVS?
         prev_duty = self._prev_duty
         if not prev_duty:  # Previous duty was not set or somehow 0
-            self._prev_duty = prev_duty = DEFAULT_DUTY
+            try:
+                self._prev_duty = prev_duty = self.nvs.get_i32('duty')
+            except OSError:
+                # NVS key did not exist, use default
+                self._prev_duty = prev_duty = DEFAULT_DUTY
 
         return prev_duty
 
     def save_previous_duty(self, prev_duty: int):
-        # TODO for ESP32, persist in NVS?
         self._prev_duty = prev_duty
+        
+        nvs = self.nvs
+        nvs.set_i32('duty', prev_duty)
+        nvs.commit()
 
     def _turn_off(self):
         duty = self.pwm.duty
