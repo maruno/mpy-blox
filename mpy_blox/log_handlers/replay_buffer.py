@@ -5,6 +5,7 @@
 import asyncio
 from collections import deque
 from logging import Handler, LogRecord, getLogger
+from os import remove
 
 from mpy_blox.contextlib import suppress
 from mpy_blox.log_handlers.formatter import VTSGRColorFormatter
@@ -33,6 +34,11 @@ class ReplayBufferHandler(Handler):
             asyncio.create_task(self._flush_task())
             logger.info("Persistence activated")
         else:
+            # Clear log file if it exists
+            with suppress(OSError):
+                remove(file_path)
+                logger.info("Removed old persistence file")
+
             self._log_file = self._flush_needed = None
 
     def reload_persisted(self):
