@@ -161,10 +161,16 @@ class AsyncProcess:
         status = bytearray(4)
         waitpid(self.pid, status, 0)
 
-        exit_code = struct.unpack('i', status)[0]
-        self.exit_code = exit_code
+        i_status: int = struct.unpack('i', status)[0]
+        if i_status & 0x7F == 0:
+            # Normal exit, without signal
+            self.exit_code = (i_status >> 8) & 0xFF
+        else:
+            # Signal termination.
+            # A negative exit_code value -N indicates termination by signal N.
+            self.exit_code = -(i_status & 0x7F)
 
-        return (exit_code >> 8) & 0xFF
+        return self.exit_code
 
     def __enter__(self):
         return self
