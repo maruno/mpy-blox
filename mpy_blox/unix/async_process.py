@@ -149,9 +149,9 @@ class AsyncProcess:
         if stderr_write_pipe is not None:
             close(stderr_write_pipe)
 
-    def close(self):
-        if self.exit_code:
-            return None
+    def close(self) -> int:
+        if self.exit_code is not None:
+            return self.exit_code
 
         if self.stdout:
             self.stdout.close()
@@ -176,5 +176,5 @@ class AsyncProcess:
         return self
 
     def __exit__(self, exc_type, exc_value, tb):
-        if not self.exit_code:
+        if self.exit_code is None:
             self.close()
