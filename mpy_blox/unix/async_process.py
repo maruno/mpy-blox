@@ -13,23 +13,23 @@ libc = ffi.open("libc.so.6")
 
 # Load FFI C functions
 # int posix_spawnp(pid_t *restrict pid, const char *restrict path, const posix_spawn_file_actions_t *restrict file_actions, const posix_spawnattr_t *restrict attrp, char *const argv[restrict], char *const envp[restrict]);
-posix_spawnp = libc.func("i", "posix_spawnp", "pppppp")
+posix_spawnp = libc.func('i', 'posix_spawnp', 'pppppp')
 # int posix_spawn_file_actions_init(posix_spawn_file_actions_t *file_actions); 
-posix_spawn_file_actions_init = libc.func("i", "posix_spawn_file_actions_init", "p")
+posix_spawn_file_actions_init = libc.func('i', 'posix_spawn_file_actions_init', 'p')
 # int posix_spawn_file_actions_destroy(posix_spawn_file_actions_t *file_actions);
-posix_spawn_file_actions_destroy = libc.func("i", "posix_spawn_file_actions_destroy", "p")
+posix_spawn_file_actions_destroy = libc.func('i', 'posix_spawn_file_actions_destroy', 'p')
 # int posix_spawn_file_actions_adddup2(posix_spawn_file_actions_t *file_actions, int fildes, int newfildes);
-posix_spawn_file_actions_adddup2 = libc.func("i", "posix_spawn_file_actions_adddup2", "pii")
+posix_spawn_file_actions_adddup2 = libc.func('i', 'posix_spawn_file_actions_adddup2', 'pii')
 # int posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *file_actions, int fildes);
-posix_spawn_file_actions_addclose = libc.func("i", "posix_spawn_file_actions_addclose", "pi")
+posix_spawn_file_actions_addclose = libc.func('i', 'posix_spawn_file_actions_addclose', 'pi')
 # int pipe(int fildes[2]);
-pipe = libc.func("i", "pipe", "p")
+pipe = libc.func('i', 'pipe', 'p')
 # int close(int fildes);
-close = libc.func("i", "close", "i")
+close = libc.func('i', 'close', 'i')
 # pid_t wait(int *stat_loc);
-waitpid = libc.func("i", "waitpid", "ipi")
+waitpid = libc.func('i', 'waitpid', 'ipi')
 # ssize_t read(int fd, void buf[.count], size_t count)
-read = libc.func("i", "read", "ipi")
+read = libc.func('i', 'read', 'ipi')
 
 
 def _build_argv(program: str, *args: str) -> tuple[bytearray, list[bytes]]:
