@@ -86,14 +86,14 @@ dist-esp32: dist-src
 
 .PHONY: dist-unix
 dist-unix: dist-src
-	@echo Building micropython optimized wheel or UNIX
+	@echo Building micropython optimized wheel for UNIX
 	@cd dist; poetry run wheel unpack $(WHEEL_VERSION)-py3-none-any.whl
 	@echo "Removing ESP32-specific modules"
 	@cd dist/$(WHEEL_VERSION); \
 		for pattern in $(ESP32_ONLY_PATTERNS); do \
 			find . -wholename "$$pattern" -delete 2>/dev/null; \
 		done
-	@echo "Byte-compiling for micropython (platform-independant/UNIX)"
+	@echo "Byte-compiling for micropython (${UNIX_MARCH}/UNIX)"
 	@cd dist/$(WHEEL_VERSION); for py_file in `find . -name "*.py"`; do poetry run mpy-cross -march=$(UNIX_MARCH) $${py_file} && rm $${py_file}; done
 	@cd dist/$(WHEEL_VERSION)/$(WHEEL_VERSION).dist-info; echo "c\nTag: mpy6-bytecode-unix_$(UNIX_MARCH)\n.\nw\nq" | ed WHEEL > /dev/null
 	@cd dist; poetry run wheel pack $(WHEEL_VERSION); rm $(WHEEL_VERSION)-py3-none-any.whl
