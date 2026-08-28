@@ -2,11 +2,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+from micropython import const
+
+import asyncio
 import ffi
 import select
 import struct
 import uctypes
-from asyncio import sleep_ms
+from logging import getLogger
+from asyncio import sleep, sleep_ms
 
 # Open libc
 libc = ffi.open("libc.so.6")
@@ -22,6 +26,8 @@ posix_spawn_file_actions_destroy = libc.func('i', 'posix_spawn_file_actions_dest
 posix_spawn_file_actions_adddup2 = libc.func('i', 'posix_spawn_file_actions_adddup2', 'pii')
 # int posix_spawn_file_actions_addclose(posix_spawn_file_actions_t *file_actions, int fildes);
 posix_spawn_file_actions_addclose = libc.func('i', 'posix_spawn_file_actions_addclose', 'pi')
+# int kill(pid_t pid, int sig)
+kill = libc.func('i', 'kill', 'ii')
 # int pipe(int fildes[2]);
 pipe = libc.func('i', 'pipe', 'p')
 # int close(int fildes);
@@ -30,6 +36,17 @@ close = libc.func('i', 'close', 'i')
 waitpid = libc.func('i', 'waitpid', 'ipi')
 # ssize_t read(int fd, void buf[.count], size_t count)
 read = libc.func('i', 'read', 'ipi')
+
+
+# Signals
+SIGTERM = const(15)
+SIGKILL = const(9)
+
+# Flags
+WNOHANG = const(1)
+
+
+logger = getLogger('async_process')
 
 
 def _build_argv(program: str, *args: str) -> tuple[bytearray, list[bytes]]:
@@ -149,18 +166,44 @@ class AsyncProcess:
         if stderr_write_pipe is not None:
             close(stderr_write_pipe)
 
-    def close(self) -> int:
+        logger.info("Process opened: %s", self.pid)
+
+    async def close(self) -> int:
         if self.exit_code is not None:
             return self.exit_code
 
+        # Close our pipes to stop communication
         if self.stdout:
             self.stdout.close()
         if self.stderr:
             self.stderr.close()
 
-        status = bytearray(4)
-        waitpid(self.pid, status, 0)
+        # Signal termination
+        pid = self.pid
+        logger.info("Sending SIGTERM to %s", pid)
+        kill(pid, SIGTERM)
 
+        # Prepare to kill the child if it's stuck
+        async def kill_after_10s():
+            await sleep(10)
+            logger.warning("Escalating to SIGKILL for child pid %s", pid)
+            kill(pid, SIGKILL)
+
+        kill_task = asyncio.create_task(kill_after_10s())
+
+        # Now reap the exit status of the process by polling
+        status = bytearray(4)
+        child_exited = False
+        while not child_exited:
+            retval = waitpid(pid, status, WNOHANG)
+            child_exited = retval == pid
+            if not child_exited:
+                await sleep_ms(10)
+
+        # Process finished, revoke license to kill
+        kill_task.cancel()
+
+        # Now parse the child exit status
         i_status: int = struct.unpack('i', status)[0]
         if i_status & 0x7F == 0:
             # Normal exit, without signal
@@ -172,9 +215,9 @@ class AsyncProcess:
 
         return self.exit_code
 
-    def __enter__(self):
+    async def __aenter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, tb):
+    async def __aexit__(self, exc_type, exc_value, tb):
         if self.exit_code is None:
-            self.close()
+            await self.close()
